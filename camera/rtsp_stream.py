@@ -9,8 +9,14 @@ is simply gone. This is what gives the pipeline its "process only the
 latest frame, drop stale frames" behaviour without any explicit
 frame-skipping logic elsewhere — a slow consumer just sees fewer, always
 current frames.
+
+Note this "always latest" behaviour is implemented entirely at this
+Python level (continuously reading and overwriting), not by asking
+FFmpeg to aggressively drop frames internally — see CAP_BUFFER_SIZE
+below for why that distinction matters.
 """
 import logging
+import os
 import threading
 import time
 
@@ -19,6 +25,22 @@ import cv2
 from camera.config import PROCESSING_WIDTH
 
 logger = logging.getLogger("racecount.camera")
+
+# How many frames FFmpeg is allowed to hold internally before this
+# module's own reader loop consumes them. Earlier versions used 1 (the
+# minimum) to chase every last millisecond of latency — but H.264 uses
+# inter-frame prediction (P-frames reference a prior I-frame), and an
+# aggressively small buffer under any CPU scheduling pressure (like YOLO
+# inference competing for the same CPU) can cause FFmpeg to discard a
+# reference frame mid-GOP to keep up. The decoder then fails to decode
+# whatever depended on it — which looks exactly like "cabac decode of
+# qscale diff failed" / "error while decoding MB" errors, not a clean
+# dropped-frame. Since this module's reader loop already provides
+# always-get-the-latest-frame behaviour at the Python level regardless
+# of this number, there's little reason to also force it at the FFmpeg
+# level — a small amount of slack here trades a little worst-case
+# latency for frames that actually decode cleanly.
+CAP_BUFFER_SIZE = 3
 
 
 class LowLatencyRTSPStream:
@@ -39,12 +61,13 @@ class LowLatencyRTSPStream:
         self.last_frame_time = 0.0
 
     def _open_capture(self):
+        # Explicitly force TCP transport. Recent OpenCV/FFmpeg builds
+        # (4.5.5+) already default to TCP, so this is mostly cheap
+        # insurance against relying on an unstated default — but it
+        # costs nothing and removes transport as a variable entirely.
+        os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
         cap = cv2.VideoCapture(self.rtsp_url, cv2.CAP_FFMPEG)
-        # Ask FFmpeg to keep as little internal buffer as it will allow.
-        # Not all builds honour this, which is why the reader loop below
-        # never trusts buffering behaviour and always treats the newest
-        # successful read as the only frame that matters.
-        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, CAP_BUFFER_SIZE)
         return cap
 
     def _reader_loop(self):
