@@ -84,9 +84,21 @@ class DirectionClassifier:
                     gate = pending["gate"]
                     del self._pending[track_id]
                     self._confirmed[track_id] = gate
-                    self.counter.register_pass(track_id, gate)
-                    logger.info("Track %s confirmed crossing: %s", track_id, gate)
-                    return gate
+                    counted = self.counter.register_pass(track_id, gate)
+                    if counted:
+                        logger.info("Track %s confirmed crossing: %s", track_id, gate)
+                        return gate
+                    # Streak completed again for a track that was already
+                    # counted (e.g. it jittered back across the line and
+                    # re-triggered a fresh pending/confirm cycle for the
+                    # same gate) — counter.register_pass() correctly
+                    # refused to double-count, and that refusal has to
+                    # propagate here too, or every caller reacting to a
+                    # non-None return (like crediting a mob's persisted
+                    # total) would double-count even though the counter
+                    # itself didn't.
+                    logger.debug("Track %s re-confirmed %s but was already counted — not re-signalled", track_id, gate)
+                    return None
             else:
                 logger.debug("Track %s crossing candidate for %s cancelled (moved back)", track_id, pending["gate"])
                 del self._pending[track_id]
@@ -97,9 +109,12 @@ class DirectionClassifier:
             landing_side = self.zones.side_of_line(gate, centroid)
             if self.confirm_observations <= 1:
                 self._confirmed[track_id] = gate
-                self.counter.register_pass(track_id, gate)
-                logger.info("Track %s confirmed crossing: %s (no confirmation required)", track_id, gate)
-                return gate
+                counted = self.counter.register_pass(track_id, gate)
+                if counted:
+                    logger.info("Track %s confirmed crossing: %s (no confirmation required)", track_id, gate)
+                    return gate
+                logger.debug("Track %s re-crossed %s but was already counted — not re-signalled", track_id, gate)
+                return None
             self._pending[track_id] = {"gate": gate, "landing_side": landing_side, "streak": 1}
         return None
 
