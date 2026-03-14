@@ -1,0 +1,79 @@
+.home-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 14px;
+  padding: 14px;
+  min-height: 0;
+}
+
+.home-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-decoration: none;
+  border-radius: 16px;
+  border: 1px solid var(--brand-navy-border);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.home-tile-start {
+  background: var(--brand-green);
+  border-color: var(--brand-green);
+}
+
+.home-tile-start:active {
+  background: var(--brand-green-light);
+}
+
+.home-tile-start .home-tile-label {
+  color: #0c1408;
+  font-size: clamp(24px, 4vw, 36px);
+}
+
+.home-tile-start .home-tile-sub {
+  color: rgba(12, 20, 8, 0.7);
+}
+
+.home-tile-blank {
+  border-style: dashed;
+  border-color: var(--brand-navy-border);
+  /* Reserved, deliberately empty -- not a mistake if it looks unstyled. */
+}
+
+.home-tile-secondary {
+  background: var(--brand-navy-surface);
+}
+
+.home-tile-secondary:active {
+  background: var(--brand-navy-surface-alt);
+}
+
+.home-tile-secondary .home-tile-label {
+  color: var(--brand-text);
+  font-size: clamp(22px, 4vw, 32px);
+}
+
+.home-tile-secondary .home-tile-sub {
+  color: var(--brand-text-muted);
+}
+
+.home-tile-label {
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.home-tile-sub {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+@media (max-aspect-ratio: 4/5) {
+  .home-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(4, 1fr);
+  }
+}
