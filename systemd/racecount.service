@@ -1,0 +1,54 @@
+[Unit]
+Description=RaceCount Sheep Tracking System
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=notify
+NotifyAccess=main
+WatchdogSec=15
+TimeoutStartSec=30
+
+ExecStart=/home/pi/racecount/venv/bin/python /home/pi/racecount/main.py
+WorkingDirectory=/home/pi/racecount
+User=pi
+
+# Set the real camera password here, or better: create
+# /etc/racecount.env (root-owned, mode 600) with
+# RACECOUNT_CAMERA_PASSWORD=... and use EnvironmentFile= instead of the
+# line below, so the credential isn't sitting in a world-readable unit
+# file under /etc/systemd/system/.
+Environment=RACECOUNT_CAMERA_PASSWORD=CHANGE_ME
+# EnvironmentFile=/etc/racecount.env
+
+Restart=always
+RestartSec=3
+
+StandardOutput=append:/home/pi/racecount/logs/systemd.log
+StandardError=append:/home/pi/racecount/logs/systemd.log
+
+[Install]
+WantedBy=multi-user.target
+
+# --- Setup ---
+# 1. python3 -m venv /home/pi/racecount/venv
+#    /home/pi/racecount/venv/bin/pip install -r requirements.txt
+# 2. Edit the paths above if racecount lives somewhere other than
+#    /home/pi/racecount, and set the real camera password.
+# 3. sudo cp racecount.service /etc/systemd/system/
+#    sudo systemctl daemon-reload
+#    sudo systemctl enable --now racecount.service
+# 4. Check it: systemctl status racecount.service
+#              journalctl -u racecount.service -f
+#
+# Type=notify + WatchdogSec means systemd expects a WATCHDOG=1 ping
+# (sent once per pipeline loop iteration in main.py via the sdnotify
+# package) at least every 15s, or it kills and restarts the service —
+# this catches a HUNG process, not just a crashed one. If sdnotify isn't
+# installed, main.py logs a warning and skips the pings; the service
+# will then hit TimeoutStartSec waiting for READY=1 and get killed on
+# every start. Make sure sdnotify is in your venv (it's in
+# requirements.txt) before enabling Type=notify, or switch this line to
+# "Type=simple" for plain crash-only restarts without hang detection.
