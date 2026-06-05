@@ -2,7 +2,7 @@
 Type=Application
 Name=RaceCount Kiosk
 Comment=Launches the RaceCount touchscreen dashboard fullscreen after login
-Exec=/home/pi/racecount/systemd/launch_kiosk.sh
+Exec=/home/baileyw/racecount/systemd/launch_kiosk.sh
 X-GNOME-Autostart-enabled=true
 NoDisplay=false
 
@@ -10,7 +10,7 @@ NoDisplay=false
 # ignore autostart symlinks) into the Pi user's autostart folder:
 #   mkdir -p ~/.config/autostart
 #   cp racecount-kiosk.desktop ~/.config/autostart/
-#   chmod +x /home/pi/racecount/systemd/launch_kiosk.sh
+#   chmod +x /home/baileyw/racecount/systemd/launch_kiosk.sh
 #
 # This only fires once the desktop session itself has started, i.e.
 # after Raspberry Pi OS's auto-login (raspi-config -> System Options ->

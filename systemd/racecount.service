@@ -11,9 +11,9 @@ NotifyAccess=main
 WatchdogSec=15
 TimeoutStartSec=30
 
-ExecStart=/home/pi/racecount/venv/bin/python /home/pi/racecount/main.py
-WorkingDirectory=/home/pi/racecount
-User=pi
+ExecStart=/home/baileyw/racecount/venv/bin/python /home/baileyw/racecount/main.py
+WorkingDirectory=/home/baileyw/racecount
+User=baileyw
 
 # Set the real camera password here, or better: create
 # /etc/racecount.env (root-owned, mode 600) with
@@ -26,17 +26,17 @@ Environment=RACECOUNT_CAMERA_PASSWORD=CHANGE_ME
 Restart=always
 RestartSec=3
 
-StandardOutput=append:/home/pi/racecount/logs/systemd.log
-StandardError=append:/home/pi/racecount/logs/systemd.log
+StandardOutput=append:/home/baileyw/racecount/logs/systemd.log
+StandardError=append:/home/baileyw/racecount/logs/systemd.log
 
 [Install]
 WantedBy=multi-user.target
 
 # --- Setup ---
-# 1. python3 -m venv /home/pi/racecount/venv
-#    /home/pi/racecount/venv/bin/pip install -r requirements.txt
+# 1. python3 -m venv /home/baileyw/racecount/venv
+#    /home/baileyw/racecount/venv/bin/pip install -r requirements.txt
 # 2. Edit the paths above if racecount lives somewhere other than
-#    /home/pi/racecount, and set the real camera password.
+#    /home/baileyw/racecount, and set the real camera password.
 # 3. sudo cp racecount.service /etc/systemd/system/
 #    sudo systemctl daemon-reload
 #    sudo systemctl enable --now racecount.service
