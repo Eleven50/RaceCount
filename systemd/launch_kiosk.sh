@@ -47,6 +47,7 @@ exec "$CHROMIUM_CMD" \
     --disable-infobars \
     --disable-session-crashed-bubble \
     --disable-translate \
+    --password-store=basic \
     --check-for-update-interval=31536000 \
     --overscroll-history-navigation=0 \
     "$URL"
