@@ -26,7 +26,22 @@ until curl --silent --fail --output /dev/null "$URL"; do
     fi
 done
 
-exec chromium-browser \
+# Recent Raspberry Pi OS images have shipped with either the Pi-specific
+# "chromium-browser" package or Debian's standard "chromium" package,
+# depending on the image variant/history — only one is normally present,
+# and which one varies by system. Detecting at runtime rather than
+# hardcoding one avoids this silently breaking again on a re-image or a
+# different Pi OS variant.
+if command -v chromium-browser >/dev/null 2>&1; then
+    CHROMIUM_CMD="chromium-browser"
+elif command -v chromium >/dev/null 2>&1; then
+    CHROMIUM_CMD="chromium"
+else
+    echo "racecount-kiosk: neither chromium-browser nor chromium found on this system" >&2
+    exit 1
+fi
+
+exec "$CHROMIUM_CMD" \
     --kiosk \
     --noerrdialogs \
     --disable-infobars \
