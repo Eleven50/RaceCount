@@ -26,6 +26,15 @@ until curl --silent --fail --output /dev/null "$URL"; do
     fi
 done
 
+# Deliberately NOT --kiosk. Squeekboard (the on-screen keyboard) is
+# hardcoded to labwc's "top" compositor layer, while --kiosk puts
+# Chromium on the "fullscreen" layer, which sits above "top" — the
+# keyboard is structurally unable to render above a true fullscreen
+# window (see labwc/labwc#2926, an open upstream issue, not something
+# fixable from this script). --start-maximized + --app=URL looks the
+# same in practice (no tabs, no address bar, no window chrome) but sits
+# on a layer the keyboard can appear above.
+
 # Recent Raspberry Pi OS images have shipped with either the Pi-specific
 # "chromium-browser" package or Debian's standard "chromium" package,
 # depending on the image variant/history — only one is normally present,
@@ -42,12 +51,12 @@ else
 fi
 
 exec "$CHROMIUM_CMD" \
-    --kiosk \
+    --start-maximized \
+    --app="$URL" \
     --noerrdialogs \
     --disable-infobars \
     --disable-session-crashed-bubble \
     --disable-translate \
     --password-store=basic \
     --check-for-update-interval=31536000 \
-    --overscroll-history-navigation=0 \
-    "$URL"
+    --overscroll-history-navigation=0
