@@ -85,7 +85,7 @@ easiest thing to get confused navigating the code):
 | `ui/templates/` + `ui/static/` | one `.html` + `.css` + `.js` per screen, plus `base.html`/`brand.css`/`brand.js` (shared header, design tokens, date formatting) | change a screen's layout, styling, or client-side behaviour |
 | `main.py` | the pipeline loop + wiring everything together at startup | change the session-gating logic, what happens on Start/End Session at the pipeline level |
 | `tools/` | `calibrate_zones.py` (CLI fallback), `export_model.py` (ONNX export) | not part of the running app — one-off utilities |
-| `systemd/` | service unit, kiosk launch script, autostart entry | deployment-only, see README.md |
+| `systemd/` | service unit, kiosk launch script, autostart entry, auto-update timer | deployment-only, see README.md |
 | `tests/` | one file per module being tested, roughly | see "Running the tests" in README.md |
 
 ## Key decisions worth knowing before you change things nearby

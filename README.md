@@ -261,6 +261,61 @@ structurally unable to render above it
 in practice but sits on a layer the keyboard can appear above. If you
 ever swap that back to `--kiosk` for any reason, this will come back.
 
+## Auto-updates from GitHub
+
+Once this is pushed to a repo, the Pi can pull and deploy new commits on
+its own — no more copying files over by hand:
+
+```bash
+sudo cp systemd/racecount-update.service systemd/racecount-update.timer \
+        systemd/racecount-boot-update.service systemd/racecount.service \
+        /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now racecount-update.timer
+sudo systemctl restart racecount.service
+```
+(That last restart picks up racecount.service's updated `Wants=`/`After=`
+lines if you already had an older copy installed — see below.)
+
+The restart step needs passwordless sudo for exactly one command, not
+broad access — add this as its own file (never edit `/etc/sudoers`
+directly):
+```bash
+sudo visudo -f /etc/sudoers.d/racecount-update
+```
+Add this line:
+```
+baileyw ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart racecount.service
+```
+
+Every 15 minutes (configurable in `racecount-update.timer`), the Pi
+checks GitHub for new commits on `main`. Nothing new → does nothing, no
+log entry. Something new → pulls it, reinstalls Python dependencies if
+`requirements.txt` changed, and runs the full test suite **before**
+touching the live service — a push that fails tests never gets deployed,
+the working tree is reset back to the last known-good commit, and the
+already-running (old, working) service is left untouched. Check
+`logs/auto-update.log` to see what it's actually done, or
+`journalctl -u racecount-update.service -f` to watch it live.
+
+**Also checks once at boot**, before `racecount.service` starts — so a
+fresh boot runs the latest pushed code immediately rather than whatever
+was on disk from before, without waiting up to 15 minutes for the first
+timer tick. This is deliberately best-effort and time-bounded (a hard
+30s timeout): if there's no WiFi yet, or the network's still coming up,
+it's skipped silently and `racecount.service` starts normally on
+whatever code is already there — it does not delay boot waiting for a
+network that might not show up, and a skip doesn't show up as a "failed"
+unit, since that's expected behaviour out somewhere with no signal, not
+a fault. `racecount-boot-update.service` doesn't need its own `enable` —
+it's pulled in automatically via `racecount.service`'s own `Wants=`.
+
+This updates the application code only — changes to systemd unit files
+themselves (`racecount.service`, this timer/service pair, the kiosk
+files) still need a manual `sudo cp` + `daemon-reload`, deliberately.
+Auto-applying changes to what a service runs as or executes is a bigger
+trust boundary than auto-applying changes to the Python it runs.
+
 ## If the video looks corrupted or choppy
 
 Symptoms: terminal full of `cabac decode of qscale diff failed` / `error

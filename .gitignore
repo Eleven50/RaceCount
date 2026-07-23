@@ -28,5 +28,3 @@ models/*.engine
 .vscode/
 .idea/
 .DS_Store
-.history_staging/
-setup_git_history.sh
