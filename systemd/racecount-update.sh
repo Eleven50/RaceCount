@@ -25,7 +25,15 @@
 
 set -euo pipefail
 
-REPO_DIR="/home/baileyw/racecount"
+# Derived from this script's own location (systemd/racecount-update.sh
+# -> repo root is one directory up) rather than a hardcoded path. Git
+# names a cloned folder after the repo exactly as it appears in the
+# clone URL -- "RaceCount" on GitHub clones to ./RaceCount, not
+# ./racecount, and Linux filesystems are case-sensitive, so a hardcoded
+# lowercase path here would silently point at nothing (or worse, an
+# unrelated stale folder) the moment the actual folder's name doesn't
+# match exactly. Self-locating sidesteps the whole problem.
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOG_FILE="$REPO_DIR/logs/auto-update.log"
 
 cd "$REPO_DIR"
