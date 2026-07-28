@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>{% block title %}RaceCount{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='brand.css') }}" />
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      {% if show_back|default(true) %}
+      <a href="/" class="app-header-back" id="headerBackLink" aria-label="Back to Home" title="Back to Home">&larr;</a>
+      {% endif %}
+      <div class="app-header-brand">
+        <img class="app-header-icon" src="{{ url_for('static', filename='img/logo-icon-white.png') }}" alt="RaceCount" />
+        <span class="app-header-wordmark"><span class="wordmark-race">Race</span><span class="wordmark-count">Count</span></span>
+      </div>
+      <div class="app-header-divider"></div>
+      <div class="app-header-product">
+        <span class="app-header-version">{{ app_version|default('v1.0') }}</span>
+      </div>
+      <div class="app-header-datetime" id="headerDateTime">—</div>
+    </header>
+    <main class="app-content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  <script src="{{ url_for('static', filename='brand.js') }}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

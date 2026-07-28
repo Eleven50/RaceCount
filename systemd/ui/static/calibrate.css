@@ -1,0 +1,243 @@
+/*
+  Calibration screen — the camera frame fills the entire viewport;
+  prompt and controls float over it as semi-transparent bars rather than
+  taking their own layout rows, per "full screen view of the camera".
+  Reuses brand.css's design tokens (:root loaded first) — no shared
+  header bar here despite every other screen having one, since a fixed
+  64px header would eat into the "full screen camera" requirement this
+  page is specifically built around. RaceCount branding hasn't been
+  folded into this page's own floating top bar yet — still TODO,
+  tracked separately from this file's CSS variable fix.
+*/
+
+.calibrate-body {
+  overflow: hidden;
+}
+
+.cal-screen {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+  overflow: hidden;
+}
+
+.cal-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  touch-action: none; /* prevent scroll/zoom gestures from eating taps */
+  cursor: crosshair;
+  -webkit-user-select: none;
+  user-select: none;
+  background: #000;
+}
+
+.cal-overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.cal-loading, .cal-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  padding: 24px;
+  color: var(--brand-text-muted);
+}
+
+.cal-spinner {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid var(--brand-navy-border);
+  border-top-color: var(--gate-right);
+  animation: cal-spin 0.8s linear infinite;
+}
+
+@keyframes cal-spin {
+  to { transform: rotate(360deg); }
+}
+
+.cal-error-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--brand-text);
+}
+
+.cal-error-sub {
+  font-size: 14px;
+  max-width: 40ch;
+}
+
+/* ---------- Floating top bar: back link + prompt + legend + progress ---------- */
+
+.cal-top-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: linear-gradient(to bottom, rgba(10, 12, 14, 0.88) 0%, rgba(10, 12, 14, 0.65) 70%, transparent 100%);
+  z-index: 5;
+}
+
+.cal-back {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--brand-text);
+  text-decoration: none;
+  font-size: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cal-back:active {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.cal-prompt-block {
+  flex: 1;
+  min-width: 0;
+}
+
+.cal-prompt {
+  font-size: clamp(15px, 2.4vw, 21px);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+.cal-prompt .gate-left { color: var(--gate-left); }
+.cal-prompt .gate-straight { color: var(--gate-straight); }
+.cal-prompt .gate-right { color: var(--gate-right); }
+
+.cal-legend {
+  margin-top: 3px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+  letter-spacing: 0.02em;
+}
+
+.cal-progress {
+  flex: 0 0 auto;
+  font-family: var(--font-numeral);
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+}
+
+/* ---------- Floating bottom bar: controls ---------- */
+
+.cal-bottom-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 10px;
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, rgba(10, 12, 14, 0.88) 0%, rgba(10, 12, 14, 0.65) 70%, transparent 100%);
+  z-index: 5;
+}
+
+.cal-btn {
+  flex: 1;
+  background: rgba(36, 41, 48, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--brand-text-muted);
+  border-radius: 10px;
+  padding: 15px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cal-btn:active {
+  background: rgba(60, 66, 74, 0.9);
+}
+
+.cal-btn-primary:active {
+  background: var(--brand-green-light);
+}
+
+.cal-btn:disabled {
+  opacity: 0.4;
+}
+
+.cal-btn-primary {
+  background: var(--brand-green);
+  border-color: var(--brand-green);
+  color: #0b1410;
+  flex: 2;
+}
+
+.cal-btn-danger {
+  color: var(--brand-danger);
+}
+
+/* ---------- Toast ---------- */
+
+.cal-toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(29, 33, 37, 0.95);
+  border: 1px solid var(--brand-navy-border);
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-size: 14px;
+  max-width: 85vw;
+  text-align: center;
+  z-index: 10;
+  color: var(--brand-text);
+}
+
+.cal-toast.error {
+  border-color: var(--brand-danger);
+  color: var(--brand-danger);
+}
+
+.cal-toast.success {
+  border-color: var(--gate-straight);
+  color: var(--gate-straight);
+}
+
+@media (max-aspect-ratio: 4/5) {
+  .cal-legend {
+    display: none; /* keep the top bar compact on portrait/narrow screens; legend still shown inline per-prompt */
+  }
+  .cal-bottom-bar {
+    flex-wrap: wrap;
+  }
+  .cal-btn {
+    flex: 1 1 40%;
+  }
+  .cal-btn-primary {
+    flex: 1 1 100%;
+  }
+}

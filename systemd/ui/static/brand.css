@@ -1,0 +1,221 @@
+/*
+  RaceCount shared design system.
+
+  Two separate color layers, deliberately not merged:
+  - --brand-*: RaceCount's identity (navy + olive green), from the actual
+    logo files — used for chrome, structure, primary actions.
+  - --gate-*: the three direction-identity colors (amber/green/blue),
+    unchanged from the existing video overlay + calibration system. These
+    carry functional meaning (which gate is which) independent of brand
+    styling, and touch actual Python CV overlay code — not something to
+    casually merge with brand green just because both happen to be green.
+
+  No external fonts/CDN — everything here has to run fully offline.
+*/
+
+:root {
+  /* Brand, sampled directly from the logo files */
+  --brand-navy: #161e26;
+  --brand-navy-surface: #1e2933;
+  --brand-navy-surface-alt: #263340;
+  --brand-navy-border: #2f3d4a;
+  --brand-green: #5f9521;
+  --brand-green-light: #75b02a;
+  --brand-text: #edf1f4;
+  --brand-text-muted: #8fa0ac;
+  --brand-danger: #d9534f;
+
+  /* Gate identity — unchanged, kept independent of brand color */
+  --gate-left: #e8a33d;
+  --gate-straight: #4caf6d;
+  --gate-right: #4a90d9;
+
+  --font-ui: -apple-system, "Segoe UI", "Noto Sans", "DejaVu Sans", Helvetica, Arial, sans-serif;
+  --font-numeral: "DejaVu Sans Mono", "Noto Sans Mono", "Liberation Mono", Consolas, monospace;
+
+  --header-height: 64px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--brand-navy);
+  color: var(--brand-text);
+  font-family: var(--font-ui);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* ---------- Shared header, every screen ---------- */
+
+.app-header {
+  flex: 0 0 var(--header-height);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 18px;
+  background: var(--brand-navy-surface);
+  border-bottom: 1px solid var(--brand-navy-border);
+}
+
+.app-header-back {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--brand-text-muted);
+  text-decoration: none;
+  font-size: 20px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-header-back:active {
+  background: var(--brand-navy-surface-alt);
+  color: var(--brand-text);
+}
+
+.app-header-back.disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.app-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.app-header-icon {
+  height: 34px;
+  width: auto;
+  display: block;
+}
+
+.app-header-wordmark {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.wordmark-race { color: var(--brand-text); }
+.wordmark-count { color: var(--brand-green); }
+
+.app-header-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 14px 0;
+  background: var(--brand-navy-border);
+  flex: 0 0 auto;
+}
+
+.app-header-product {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.app-header-version {
+  font-size: 12px;
+  font-family: var(--font-numeral);
+  color: var(--brand-text-muted);
+  white-space: nowrap;
+}
+
+.app-header-datetime {
+  flex: 0 0 auto;
+  font-family: var(--font-numeral);
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  color: var(--brand-text-muted);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ---------- Content area ---------- */
+
+.app-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Shared button / tile primitives ---------- */
+
+.ml-btn {
+  background: var(--brand-navy-surface-alt);
+  border: 1px solid var(--brand-navy-border);
+  color: var(--brand-text);
+  border-radius: 12px;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.1s ease;
+}
+
+.ml-btn:active {
+  background: var(--brand-navy-border);
+}
+
+.ml-btn-primary {
+  background: var(--brand-green);
+  border-color: var(--brand-green);
+  color: #0c1408;
+}
+
+.ml-btn-primary:active {
+  background: var(--brand-green-light);
+}
+
+.ml-btn:disabled,
+.ml-btn.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.ml-card {
+  background: var(--brand-navy-surface);
+  border: 1px solid var(--brand-navy-border);
+  border-radius: 14px;
+}
+
+.ml-placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--brand-text-muted);
+  text-align: center;
+  padding: 24px;
+}
+
+.ml-placeholder-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--brand-text);
+}

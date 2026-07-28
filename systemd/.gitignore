@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+venv/
+*.egg-info/
+
+# Runtime artifacts — logs and calibration are environment-specific and
+# shouldn't be committed
+logs/*.log
+logic/zones_config.json
+
+# Mob and session data is real farm records, not source — back this up
+# separately if you want it preserved beyond what's on the Pi
+data/mobs/*.json
+data/sessions/*.json
+
+# Exported model formats (regenerate locally via tools/export_model.py —
+# these are build artifacts, not source)
+models/*.onnx
+models/*_ncnn_model/
+models/*.engine
+
+# Keep the shipped stock model though
+!models/yolov8n.pt
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store

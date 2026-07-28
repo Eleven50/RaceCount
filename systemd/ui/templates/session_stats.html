@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}RaceCount — Session Complete{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='session_stats.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="stats-screen" data-record-id="{{ record_id }}">
+  <div class="stats-loading" id="statsLoading">Loading session…</div>
+
+  <div class="stats-body" id="statsBody" style="display:none">
+    <div class="stats-heading">Session Complete</div>
+
+    <div class="stats-card">
+      <div class="stats-card-top">
+        <div class="stats-mob-name" id="statsMobName">—</div>
+        <div class="stats-meta">
+          <span id="statsDate">—</span>
+          <span class="stats-meta-dot">·</span>
+          <span id="statsDuration">—</span>
+        </div>
+      </div>
+
+      <div class="stats-breakdown">
+        <div class="stats-breakdown-row" data-dir="left">
+          <span class="stats-breakdown-label" id="statsLabelLeft">Left</span>
+          <span class="stats-breakdown-count" id="statsCountLeft">0</span>
+        </div>
+        <div class="stats-breakdown-row" data-dir="straight">
+          <span class="stats-breakdown-label" id="statsLabelStraight">Straight</span>
+          <span class="stats-breakdown-count" id="statsCountStraight">0</span>
+        </div>
+        <div class="stats-breakdown-row" data-dir="right">
+          <span class="stats-breakdown-label" id="statsLabelRight">Right</span>
+          <span class="stats-breakdown-count" id="statsCountRight">0</span>
+        </div>
+      </div>
+
+      <div class="stats-totals">
+        <div class="stats-total-this-session">
+          <span>Counted this session</span>
+          <strong id="statsSessionTotal">0</strong>
+        </div>
+        <div class="stats-total-mob">
+          <span id="statsMobNameInline">Mob</span> total is now
+          <strong id="statsMobTotal">—</strong>
+        </div>
+      </div>
+    </div>
+
+    <a href="/" class="ml-btn ml-btn-primary stats-done-btn">Done</a>
+  </div>
+
+  <div class="stats-error" id="statsError" style="display:none">
+    <div class="stats-error-title">Couldn't load this session</div>
+    <div class="stats-error-sub" id="statsErrorDetail"></div>
+    <a href="/" class="ml-btn stats-done-btn">Back to Home</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='session_stats.js') }}"></script>
+{% endblock %}

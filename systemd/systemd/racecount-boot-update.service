@@ -1,0 +1,26 @@
+[Unit]
+Description=RaceCount best-effort update check at boot (skips silently if no network yet)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=baileyw
+# The leading '-' tells systemd not to treat a non-zero exit (including
+# the timeout firing) as this unit failing. No WiFi yet at boot time is
+# an expected, normal situation out in a paddock, not something that
+# should show up as an alarming "failed" unit in systemctl status --
+# the timeout just means racecount.service starts on whatever code was
+# already on disk, same as it always would have.
+#
+# Reuses racecount-update.sh unchanged rather than duplicating the
+# fetch/pull/test/deploy logic in a second script -- the only thing
+# different about the boot context is the hard time bound below.
+ExecStart=-/usr/bin/timeout 30 /home/baileyw/racecount/systemd/racecount-update.sh
+
+# Installed automatically as a side effect of racecount.service's own
+# Wants=/After= lines below -- no separate `systemctl enable` needed
+# for this unit specifically. Still needs to be copied into place
+# though:
+#   sudo cp racecount-boot-update.service /etc/systemd/system/
+#   sudo systemctl daemon-reload

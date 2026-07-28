@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}RaceCount — Active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='active.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="active-screen">
+
+  <div class="active-video-col">
+    <div class="active-video-panel" id="videoPanel">
+      <img id="videoFeed" src="/video_feed" alt="Live camera feed" />
+      <div class="status-pill">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Connecting…</span>
+      </div>
+      <a href="/calibrate" class="active-cal-link" aria-label="Calibrate zones" title="Calibrate zones">⚙</a>
+      <div class="active-offline-banner" id="offlineBanner">
+        <div class="active-offline-title">Camera signal lost</div>
+        <div class="active-offline-sub">RaceCount will keep retrying automatically.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="active-controls-col">
+    <div class="active-mob-banner" id="mobBanner">
+      <div class="active-mob-banner-label">No mob selected</div>
+      <a href="/start" class="active-mob-banner-link">Go to Start &rarr;</a>
+    </div>
+
+    <div class="active-counts">
+      <div class="active-count-row" data-dir="left">
+        <div class="active-count-circle" id="countLeft">0</div>
+        <div class="active-count-label" id="labelLeft">Left</div>
+      </div>
+      <div class="active-count-row" data-dir="straight">
+        <div class="active-count-circle" id="countStraight">0</div>
+        <div class="active-count-label" id="labelStraight">Straight</div>
+      </div>
+      <div class="active-count-row" data-dir="right">
+        <div class="active-count-circle" id="countRight">0</div>
+        <div class="active-count-label" id="labelRight">Right</div>
+      </div>
+    </div>
+
+    <div class="active-buttons">
+      <button class="ml-btn ml-btn-primary active-session-btn" id="startSessionBtn" disabled>Start Session</button>
+      <button class="ml-btn active-session-btn active-end-btn" id="endSessionBtn" disabled>End Session</button>
+      <a href="/calibrate" class="ml-btn active-recal-btn">Recalibrate gates</a>
+    </div>
+
+    <div class="active-blocked-reason" id="blockedReason"></div>
+  </div>
+
+  <div class="active-toast" id="activeToast" style="display:none"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='active.js') }}"></script>
+{% endblock %}

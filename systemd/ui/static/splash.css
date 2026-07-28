@@ -1,0 +1,48 @@
+.splash-body {
+  overflow: hidden;
+}
+
+.splash-screen {
+  width: 100vw;
+  height: 100vh;
+  background: var(--brand-navy);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+}
+
+.splash-logo {
+  width: min(60vw, 480px);
+  height: auto;
+  /* A gentle fade/rise on load rather than just appearing -- the only
+     bit of motion on this screen besides the spinner, kept short so it
+     never feels like it's stalling. */
+  animation: splash-rise 0.5s ease-out;
+}
+
+@keyframes splash-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.splash-caption {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--brand-text-muted);
+  letter-spacing: 0.02em;
+}
+
+.splash-spinner {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 3px solid var(--brand-navy-border);
+  border-top-color: var(--brand-green);
+  animation: splash-spin 0.8s linear infinite;
+}
+
+@keyframes splash-spin {
+  to { transform: rotate(360deg); }
+}
