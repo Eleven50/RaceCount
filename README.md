@@ -168,13 +168,13 @@ Dev / foreground:
 venv/bin/python main.py
 ```
 Then open `http://<pi-ip>:8080` (or `http://localhost:8080` on the Pi
-itself) for the Home screen — a small multi-screen, MobLogic-branded UI:
+itself) for the Home screen — a small multi-screen, RaceCount-branded UI:
 Home, Start (create or continue a mob), Active (live camera + session
 control), Session Stats (shown automatically after End Session), History
 (list/expand/delete past mobs), Calibrate, and a splash screen shown once
 at cold boot (see `systemd/launch_kiosk.sh`, which points at `/splash`
 rather than `/` directly). All built and functional. Still open: folding
-the MobLogic header into Calibration's own floating bar (it currently has
+the RaceCount header into Calibration's own floating bar (it currently has
 no shared header at all, by design — see the note in that file).
 
 Production (auto-start on boot, restart on crash or hang):

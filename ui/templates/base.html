@@ -14,12 +14,11 @@
       <a href="/" class="app-header-back" id="headerBackLink" aria-label="Back to Home" title="Back to Home">&larr;</a>
       {% endif %}
       <div class="app-header-brand">
-        <img class="app-header-icon" src="{{ url_for('static', filename='img/logo-icon-white.png') }}" alt="MobLogic" />
-        <span class="app-header-wordmark"><span class="wordmark-mob">Mob</span><span class="wordmark-logic">Logic</span></span>
+        <img class="app-header-icon" src="{{ url_for('static', filename='img/logo-icon-white.png') }}" alt="RaceCount" />
+        <span class="app-header-wordmark"><span class="wordmark-race">Race</span><span class="wordmark-count">Count</span></span>
       </div>
       <div class="app-header-divider"></div>
       <div class="app-header-product">
-        <span class="app-header-product-name">RaceCount</span>
         <span class="app-header-version">{{ app_version|default('v1.0') }}</span>
       </div>
       <div class="app-header-datetime" id="headerDateTime">—</div>

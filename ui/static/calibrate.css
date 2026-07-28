@@ -5,7 +5,7 @@
   Reuses brand.css's design tokens (:root loaded first) — no shared
   header bar here despite every other screen having one, since a fixed
   64px header would eat into the "full screen camera" requirement this
-  page is specifically built around. MobLogic branding hasn't been
+  page is specifically built around. RaceCount branding hasn't been
   folded into this page's own floating top bar yet — still TODO,
   tracked separately from this file's CSS variable fix.
 */

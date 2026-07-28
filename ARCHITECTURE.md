@@ -132,7 +132,7 @@ These are all explained in more depth as comments in the relevant file
   (calibration needs the full screen for the camera view; splash is a
   one-time branding moment before any screen chrome exists).
 - Colors are two separate token sets in `ui/static/brand.css`, on
-  purpose: `--brand-*` (navy/green, MobLogic's identity — chrome,
+  purpose: `--brand-*` (navy/green, RaceCount's identity — chrome,
   buttons, structure) and `--gate-*` (amber/green/blue — functional,
   tied to actual Python CV overlay code, means "which gate" everywhere
   it appears: video overlay, calibration page, Start screen field

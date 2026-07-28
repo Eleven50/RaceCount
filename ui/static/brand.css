@@ -1,8 +1,8 @@
 /*
-  MobLogic / RaceCount shared design system.
+  RaceCount shared design system.
 
   Two separate color layers, deliberately not merged:
-  - --brand-*: MobLogic's identity (navy + olive green), from the actual
+  - --brand-*: RaceCount's identity (navy + olive green), from the actual
     logo files — used for chrome, structure, primary actions.
   - --gate-*: the three direction-identity colors (amber/green/blue),
     unchanged from the existing video overlay + calibration system. These
@@ -116,8 +116,8 @@ html, body {
   white-space: nowrap;
 }
 
-.wordmark-mob { color: var(--brand-text); }
-.wordmark-logic { color: var(--brand-green); }
+.wordmark-race { color: var(--brand-text); }
+.wordmark-count { color: var(--brand-green); }
 
 .app-header-divider {
   width: 1px;
@@ -133,15 +133,6 @@ html, body {
   gap: 8px;
   flex: 1;
   min-width: 0;
-}
-
-.app-header-product-name {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--brand-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .app-header-version {

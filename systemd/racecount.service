@@ -20,8 +20,8 @@ User=baileyw
 # RACECOUNT_CAMERA_PASSWORD=... and use EnvironmentFile= instead of the
 # line below, so the credential isn't sitting in a world-readable unit
 # file under /etc/systemd/system/.
-# Environment=RACECOUNT_CAMERA_PASSWORD=CHANGE_ME
-EnvironmentFile=/etc/racecount.env
+Environment=RACECOUNT_CAMERA_PASSWORD=CHANGE_ME
+# EnvironmentFile=/etc/racecount.env
 
 Restart=always
 RestartSec=3
