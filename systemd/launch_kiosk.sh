@@ -50,6 +50,31 @@ else
     exit 1
 fi
 
+# Chromium treats anything other than a clean shutdown (a crash, a
+# power loss, a manual `pkill` during testing) as reason to prompt for
+# session restore on next launch -- with no window chrome to click
+# through, that prompt would just sit there blocking the kiosk. Since
+# this profile only ever points at one fixed URL, there's nothing
+# meaningful to restore in the first place: just tell it every launch
+# was clean, before it gets the chance to think otherwise. Wrapped so
+# that if this fails for any reason (missing file, unexpected format),
+# it never blocks the actual kiosk launch below.
+PREFS_FILE=$(find "$HOME/.config" -name "Preferences" -path "*hromium*" 2>/dev/null | head -1)
+if [ -n "$PREFS_FILE" ]; then
+    python3 -c "
+import json
+path = '$PREFS_FILE'
+try:
+    with open(path) as f:
+        data = json.load(f)
+    data.setdefault('profile', {})['exit_type'] = 'Normal'
+    with open(path, 'w') as f:
+        json.dump(data, f)
+except Exception:
+    pass
+" 2>/dev/null || true
+fi
+
 exec "$CHROMIUM_CMD" \
     --start-maximized \
     --app="$URL" \

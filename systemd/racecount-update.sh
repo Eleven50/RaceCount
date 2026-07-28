@@ -52,6 +52,20 @@ if [ "$LOCAL" == "$REMOTE" ]; then
 fi
 
 log "New commits found: $(git rev-parse --short "$LOCAL") -> $(git rev-parse --short "$REMOTE")"
+
+# Restarting mid-session would interrupt live counting -- a pending
+# update just waits for a cycle where nothing's running, rather than
+# forcing itself in. Doesn't even pull yet, so the working tree stays
+# untouched until it's actually safe to deploy. If the backend's
+# unreachable entirely (curl fails), that's not an active session to
+# protect -- proceed as normal, since restarting a crashed service is
+# exactly the right recovery behaviour.
+SESSION_ACTIVE=$(curl -s --max-time 5 http://localhost:8080/api/session/status 2>/dev/null | grep -o '"active": *true' || true)
+if [ -n "$SESSION_ACTIVE" ]; then
+    log "Update available but a session is currently active -- deferring to next check."
+    exit 0
+fi
+
 git pull --quiet origin main
 
 if [ -f requirements.txt ]; then

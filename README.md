@@ -290,13 +290,17 @@ baileyw ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart racecount.service
 
 Every 15 minutes (configurable in `racecount-update.timer`), the Pi
 checks GitHub for new commits on `main`. Nothing new → does nothing, no
-log entry. Something new → pulls it, reinstalls Python dependencies if
-`requirements.txt` changed, and runs the full test suite **before**
-touching the live service — a push that fails tests never gets deployed,
-the working tree is reset back to the last known-good commit, and the
-already-running (old, working) service is left untouched. Check
-`logs/auto-update.log` to see what it's actually done, or
-`journalctl -u racecount-update.service -f` to watch it live.
+log entry. Something new, but a session's currently active → doesn't
+even pull yet, just logs that it's deferring and checks again next
+cycle — restarting the service mid-session would interrupt live
+counting, which is worse than an update landing a few minutes late.
+Something new and nothing running → pulls it, reinstalls Python
+dependencies if `requirements.txt` changed, and runs the full test suite
+**before** touching the live service — a push that fails tests never
+gets deployed, the working tree is reset back to the last known-good
+commit, and the already-running (old, working) service is left
+untouched. Check `logs/auto-update.log` to see what it's actually done,
+or `journalctl -u racecount-update.service -f` to watch it live.
 
 **Also checks once at boot**, before `racecount.service` starts — so a
 fresh boot runs the latest pushed code immediately rather than whatever
