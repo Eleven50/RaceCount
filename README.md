@@ -26,11 +26,10 @@ Reolink RTSP  →  camera/          background thread, always-latest-frame,
                                     handler's arm at the gate)
                      │
                      ▼
-              logic/              3 calibrated gate lines + a crossing
-                                    classifier (a track's movement must
-                                    cross a gate's line, then hold on the
-                                    far side for one more observation
-                                    before it's confirmed)
+              logic/              3 calibrated gate RECTANGLES + an
+                                    enter-then-exit classifier (a track
+                                    must be seen entering the rectangle,
+                                    then exiting it, to be counted)
                      │
                      ▼
               counting/           one count per track ID, ever

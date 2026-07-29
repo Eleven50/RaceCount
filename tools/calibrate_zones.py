@@ -2,15 +2,18 @@
 Interactive zone calibration (standalone, desktop OpenCV window).
 
 Zone coordinates are specific to how your camera is physically mounted —
-there's no way to hardcode correct lines without seeing your actual
+there's no way to hardcode correct rectangles without seeing your actual
 frame. Run this once (and again any time the camera is remounted) to
-click out the left/straight/right gate lines and save them to
+click out the left/straight/right gate rectangles and save them to
 logic/zones_config.json, which ZoneManager loads at runtime.
 
-Each gate is exactly 2 points — its physical endpoints — matching the
-in-dashboard /calibrate page's Point A / Point B convention, since a
-gate's counting zone is a line it crosses, not an area (see
-logic/zones.py for why).
+Each gate is exactly 2 points — opposite corners of its counting
+rectangle, matching the in-dashboard /calibrate page's Point A / Point B
+convention. A sheep is counted once its track is genuinely seen entering
+that rectangle and then exiting it (see logic/zones.py for why this is
+an area, not a line, and logic/direction_logic.py for the enter/exit
+counting logic). Calibrate the rectangle with real gap from the
+physical gate structure, not flush against it.
 
 This is the fallback tool (no Flask server needed) — the in-dashboard
 /calibrate page is the one to reach for day-to-day, and uses
@@ -23,7 +26,7 @@ Usage:
     python tools/calibrate_zones.py
 
 Controls:
-    left click   place Point A, then Point B, for the current gate
+    left click   place Point A, then Point B (opposite corners), for the current gate
     n            confirm current gate's 2 points, move to the next (left -> straight -> right)
     u            undo last point
     r            clear current in-progress gate
@@ -75,12 +78,13 @@ class Calibrator:
         for saved_name, points in self.gates.items():
             color = GATE_COLORS.get(saved_name, (200, 200, 200))
             a, b = tuple(points[0]), tuple(points[1])
-            cv2.line(frame, a, b, color, 4)
-            for p in (a, b):
+            x_min, x_max = sorted((a[0], b[0]))
+            y_min, y_max = sorted((a[1], b[1]))
+            cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), color, 3)
+            for p in (a, b, (x_min, y_max), (x_max, y_min)):
                 cv2.circle(frame, p, 6, color, -1)
                 cv2.circle(frame, p, 6, (20, 20, 20), 2)
-            mid = ((a[0] + b[0]) // 2, (a[1] + b[1]) // 2)
-            cv2.putText(frame, saved_name.upper(), (mid[0] + 10, mid[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+            cv2.putText(frame, saved_name.upper(), (x_min + 6, y_min - 8), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
         if name:
             color = GATE_COLORS.get(name, (0, 0, 255))
@@ -89,7 +93,10 @@ class Calibrator:
                 label = "A" if i == 0 else "B"
                 cv2.putText(frame, label, (p[0] + 10, p[1] + 6), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
             if len(self.current_points) == 2:
-                cv2.line(frame, tuple(self.current_points[0]), tuple(self.current_points[1]), color, 2)
+                a, b = self.current_points
+                x_min, x_max = sorted((a[0], b[0]))
+                y_min, y_max = sorted((a[1], b[1]))
+                cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), color, 2)
 
         return frame
 
@@ -136,7 +143,7 @@ def main():
     cv2.namedWindow(window)
     cv2.setMouseCallback(window, calib.mouse_callback)
 
-    print("\nClick 2 points per gate (Point A, then Point B), in order: left, straight, right.\n")
+    print("\nClick 2 points per gate (Point A, then Point B — opposite corners of the gate rectangle), in order: left, straight, right.\n")
 
     while True:
         cv2.imshow(window, calib.render())

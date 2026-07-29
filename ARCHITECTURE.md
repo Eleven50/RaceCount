@@ -36,8 +36,9 @@ tracking/tracker.py        ByteTrack assigns persistent IDs, keeps a
                              short trajectory (centroid history) per ID
     │
     ▼
-logic/zones.py             3 calibrated gate LINES (not areas) +
-                             segment-intersection crossing detection
+logic/zones.py             3 calibrated gate RECTANGLES (not lines) +
+                             enter-then-exit detection, with a segment-
+                             crossing safety net for fast movement
     │
     ▼
 logic/direction_logic.py   debounced confirmation (a crossing needs
