@@ -145,6 +145,13 @@ These are all explained in more depth as comments in the relevant file
   tap-once-to-arm, tap-again-to-confirm pattern rather than a native
   `confirm()` dialog, which doesn't suit a kiosk touchscreen well. See
   `history.js`'s delete button for the reference implementation.
+- Any `<input type="text">` automatically gets the built-in on-screen
+  keyboard (`keyboard.js`/`keyboard.css`, loaded globally via
+  `base.html`) — nothing to wire up per-field. Built this way
+  specifically because every OS-level on-screen keyboard turned out to
+  depend on Wayland compositor layer ordering that a fullscreen kiosk
+  browser can't reliably cooperate with — see the README's "on-screen
+  keyboard" section for the full story.
 
 ## What's NOT in the code
 

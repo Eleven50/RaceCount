@@ -261,6 +261,40 @@ structurally unable to render above it
 in practice but sits on a layer the keyboard can appear above. If you
 ever swap that back to `--kiosk` for any reason, this will come back.
 
+## The on-screen keyboard is built into the app, not the OS
+
+Every text field (the four on the Start screen — mob name, three gate
+labels) gets a keyboard that lives entirely inside the page itself
+(`ui/static/keyboard.js` + `keyboard.css`, loaded globally via
+`base.html`), not Raspberry Pi OS's own on-screen keyboard.
+
+This isn't a style preference — it's the actual fix for a real,
+extensively-tested dead end. Every OS-level on-screen keyboard
+(Squeekboard, wvkbd) is a *separate* Wayland client that has to render
+*above* Chromium via the compositor's layer-shell protocol, and
+fullscreen/kiosk Chromium sits on a compositor layer that one couldn't
+get above (a confirmed, open upstream labwc/Squeekboard limitation) and
+the other didn't render above either despite defaulting to the
+"correct" layer in its own source. A keyboard built into the page
+sidesteps the entire category of problem: it's not a second window
+trying to layer above a first one, it's just DOM content Chromium is
+already rendering as part of the same page.
+
+Bonus this unlocks: since the keyboard no longer depends on Chromium
+running in a specific window state, `launch_kiosk.sh` can go back to
+plain `--kiosk` instead of the `--start-maximized --app=` workaround —
+getting the clean, no-titlebar fullscreen experience back *and* working
+text input, together, which the OS-level approach could never do at the
+same time.
+
+Attaches via event delegation (`focusin`/`focusout` on `document`), so
+any text input on any screen gets it automatically without needing to
+opt in — relevant if more text fields get added later. Handles cursor
+position correctly for mid-word insertion and range-replacement, and
+explicitly enforces each field's `maxlength`, since setting `.value`
+programmatically (the only option here — there's no real keystroke to
+simulate) bypasses the browser's native enforcement of it entirely.
+
 ## Auto-updates from GitHub
 
 Once this is pushed to a repo, the Pi can pull and deploy new commits on

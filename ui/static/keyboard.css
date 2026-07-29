@@ -1,0 +1,100 @@
+/*
+  Built-in on-screen keyboard — exists specifically because every OS-level
+  option (squeekboard, wvkbd) turned out to depend on Wayland compositor
+  layer ordering that a fullscreen/kiosk browser window structurally
+  can't cooperate with on this hardware. Living entirely inside the page
+  sidesteps that whole category of problem: this is just DOM content
+  Chromium is already rendering, not a second client trying to layer
+  above a first one.
+
+  Global (loaded via base.html), not page-specific — attaches to any
+  text input on any screen via event delegation in keyboard.js, so it
+  keeps working automatically if more text fields get added later.
+*/
+
+#rc-keyboard {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 500;
+  background: var(--brand-navy-surface);
+  border-top: 1px solid var(--brand-navy-border);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
+  padding: 10px 8px calc(10px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transform: translateY(100%);
+  transition: transform 0.18s ease-out;
+}
+
+#rc-keyboard.rc-keyboard-visible {
+  transform: translateY(0);
+}
+
+.rc-kb-row {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.rc-kb-key {
+  flex: 1;
+  max-width: 64px;
+  min-height: 52px;
+  background: var(--brand-navy-surface-alt);
+  border: 1px solid var(--brand-navy-border);
+  border-radius: 8px;
+  color: var(--brand-text);
+  font-family: var(--font-ui);
+  font-size: 20px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.rc-kb-key:active {
+  background: var(--brand-navy-border);
+}
+
+.rc-kb-key-wide {
+  max-width: none;
+  flex: 2;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.rc-kb-key-space {
+  max-width: none;
+  flex: 6;
+}
+
+.rc-kb-key-done {
+  max-width: none;
+  flex: 2;
+  background: var(--brand-green);
+  border-color: var(--brand-green);
+  color: #0c1408;
+  font-weight: 700;
+}
+
+.rc-kb-key-done:active {
+  background: var(--brand-green-light);
+}
+
+.rc-kb-key-shift.rc-kb-active {
+  background: var(--brand-green);
+  border-color: var(--brand-green);
+  color: #0c1408;
+}
+
+/* Push page content up so the keyboard never covers the focused field --
+   keyboard.js toggles this on <body> rather than sizing per-screen. */
+body.rc-keyboard-open {
+  padding-bottom: 268px;
+  transition: padding-bottom 0.18s ease-out;
+}

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>{% block title %}RaceCount{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='brand.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='keyboard.css') }}" />
   {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -28,6 +29,7 @@
     </main>
   </div>
   <script src="{{ url_for('static', filename='brand.js') }}"></script>
+  <script src="{{ url_for('static', filename='keyboard.js') }}"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>
