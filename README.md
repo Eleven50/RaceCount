@@ -280,12 +280,11 @@ sidesteps the entire category of problem: it's not a second window
 trying to layer above a first one, it's just DOM content Chromium is
 already rendering as part of the same page.
 
-Bonus this unlocks: since the keyboard no longer depends on Chromium
-running in a specific window state, `launch_kiosk.sh` can go back to
-plain `--kiosk` instead of the `--start-maximized --app=` workaround —
-getting the clean, no-titlebar fullscreen experience back *and* working
-text input, together, which the OS-level approach could never do at the
-same time.
+Bonus this unlocked: since the keyboard no longer depends on Chromium
+running in a specific window state, `launch_kiosk.sh` is back to plain
+`--kiosk` instead of the `--start-maximized --app=` workaround —
+the clean, no-titlebar fullscreen experience *and* working text input,
+together, which the OS-level approach could never do at the same time.
 
 Attaches via event delegation (`focusin`/`focusout` on `document`), so
 any text input on any screen gets it automatically without needing to

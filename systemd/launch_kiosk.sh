@@ -26,14 +26,22 @@ until curl --silent --fail --output /dev/null "$URL"; do
     fi
 done
 
-# Deliberately NOT --kiosk. Squeekboard (the on-screen keyboard) is
-# hardcoded to labwc's "top" compositor layer, while --kiosk puts
-# Chromium on the "fullscreen" layer, which sits above "top" — the
-# keyboard is structurally unable to render above a true fullscreen
-# window (see labwc/labwc#2926, an open upstream issue, not something
-# fixable from this script). --start-maximized + --app=URL looks the
-# same in practice (no tabs, no address bar, no window chrome) but sits
-# on a layer the keyboard can appear above.
+# Back to plain --kiosk. The reason this was avoided for a while: the
+# OS-level on-screen keyboard (Squeekboard) is hardcoded to labwc's
+# "top" compositor layer, while --kiosk puts Chromium on the
+# "fullscreen" layer above it -- the keyboard was structurally unable
+# to render above a true fullscreen window (labwc/labwc#2926, an open
+# upstream issue). --start-maximized + --app=URL worked around that,
+# at the cost of a visible titlebar Chromium draws itself regardless of
+# window state.
+#
+# That workaround is no longer needed: RaceCount's text inputs now have
+# their own built-in on-screen keyboard (ui/static/keyboard.js), which
+# lives inside the page itself rather than depending on the OS/Wayland
+# compositor at all -- so which window state Chromium is in stopped
+# being relevant. Back to true --kiosk gets the clean, no-titlebar
+# fullscreen experience back, with working text input at the same time,
+# which the OS-level approach could never do simultaneously.
 
 # Recent Raspberry Pi OS images have shipped with either the Pi-specific
 # "chromium-browser" package or Debian's standard "chromium" package,
@@ -76,12 +84,12 @@ except Exception:
 fi
 
 exec "$CHROMIUM_CMD" \
-    --start-maximized \
-    --app="$URL" \
+    --kiosk \
     --noerrdialogs \
     --disable-infobars \
     --disable-session-crashed-bubble \
     --disable-translate \
     --password-store=basic \
     --check-for-update-interval=31536000 \
-    --overscroll-history-navigation=0
+    --overscroll-history-navigation=0 \
+    "$URL"
