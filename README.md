@@ -298,21 +298,34 @@ simulate) bypasses the browser's native enforcement of it entirely.
 
 Every internal link (the header's Back button, Home's nav tiles, etc.)
 goes through `ui/static/nav-guard.js`, loaded globally via `base.html`,
-rather than navigating directly. It checks the lightweight `/api/status`
-endpoint first — on a healthy backend this costs a few imperceptible
-milliseconds — and only if that fails does anything become visible: a
-small on-brand "Reconnecting…" overlay that retries quietly for a few
-seconds before offering a manual retry, instead of the browser's own
-generic "can't reach this page" error.
+rather than navigating directly.
 
-This exists because a plain `<a href>` hitting the backend during a
-brief restart (the auto-updater applying a new commit, or any other
-transient blip) would otherwise show that raw browser error page —
-survivable, but not something a kiosk device should ever expose someone
-to. Fixing navigation itself to tolerate a brief blip is more robust
-than only trying to avoid every possible collision window (which the
-auto-updater's session-aware deferral already reduces, but can't
-eliminate entirely for idle, non-session browsing).
+This went through a real revision worth knowing about. The first version
+checked the backend (`/api/status`) *before every single navigation* —
+on a healthy backend that's a few milliseconds, but it's still a real
+network round-trip added to the critical path of every screen switch,
+and on Pi-class hardware that was enough to make completely normal
+navigation feel sluggish. That was taxing the common case (ordinary
+navigation, which is the overwhelming majority of the time) to guard
+against a rare one (a brief blip during an auto-update restart).
+
+The current version instead runs a lightweight background poller
+(`/api/status` every 2.5s, independent of navigation) that keeps an
+already-known `backendAlive` flag current. Clicking a link checks that
+flag — healthy (the default, and the common case) means instant
+navigation, identical to a plain `<a href>`, zero added latency. The
+"Reconnecting…" overlay only ever appears when the poller has *already*
+detected a real problem, not as a tax on every click waiting to find
+out. Measured with repeated real navigations: ~190ms average, which is
+just natural page-load time, not an artificial delay.
+
+This exists at all because a plain `<a href>` hitting the backend during
+a brief restart (the auto-updater applying a new commit, or any other
+transient blip) would otherwise show the browser's raw "can't reach
+this page" error — survivable, but not something a kiosk device should
+ever expose someone to. The auto-updater's session-aware deferral
+already reduces how often that window can even occur; this catches the
+rest without taxing everything else to do it.
 
 ## Auto-updates from GitHub
 

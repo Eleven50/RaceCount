@@ -111,22 +111,35 @@
   font-weight: 600;
 }
 
-/* ---------- Advanced: unlocked state ---------- */
+/* ---------- Debug: unlocked state ---------- */
 
-.settings-advanced-link {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 14px 16px;
-  background: var(--brand-navy-surface-alt);
-  border-radius: 12px;
-  text-decoration: none;
+.settings-run-tests-btn {
+  min-height: 44px;
+  padding: 0 20px;
 }
 
-.settings-advanced-link .settings-row-title {
+.settings-log {
+  margin: 0;
+  padding: 12px 14px;
+  background: var(--brand-navy);
+  border: 1px solid var(--brand-navy-border);
+  border-radius: 10px;
+  font-family: var(--font-numeral);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--brand-text-muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.settings-log-pass {
+  border-color: var(--brand-green);
   color: var(--brand-text);
 }
 
-.settings-advanced-link .settings-row-sub {
-  color: var(--brand-text-muted);
+.settings-log-fail {
+  border-color: var(--brand-danger);
+  color: var(--brand-text);
 }

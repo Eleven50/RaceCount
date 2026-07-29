@@ -149,6 +149,18 @@ html, body {
   display: block;
 }
 
+.app-header-icon-light {
+  display: none;
+}
+
+[data-theme="light"] .app-header-icon-dark {
+  display: none;
+}
+
+[data-theme="light"] .app-header-icon-light {
+  display: block;
+}
+
 .app-header-wordmark {
   font-size: 19px;
   font-weight: 800;

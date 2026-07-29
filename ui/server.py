@@ -9,8 +9,12 @@ video frame request). It holds only the single latest JPEG — never a
 queue — consistent with the rest of the system's no-buffering design.
 """
 import logging
+import socket
+import subprocess
+import sys
 import threading
 import time
+from pathlib import Path
 from typing import Optional
 
 import cv2
@@ -251,6 +255,56 @@ def create_app(dashboard_state: DashboardState, counter, zone_manager, mob_store
         if settings_store.check_advanced_pin(pin):
             return jsonify({"ok": True})
         return jsonify({"ok": False}), 403
+
+    @app.route("/api/debug/info")
+    def api_debug_info():
+        # Camera username and IP are genuinely useful for confirming
+        # RaceCount is pointed at the right device -- the password itself
+        # is deliberately never exposed here, or anywhere in the UI.
+        from camera.config import CAMERA_IP, CAMERA_PORT, CAMERA_USER
+
+        pi_ip = "unknown"
+        try:
+            # UDP connect() never actually sends a packet -- this is a
+            # local, offline-safe way to ask the kernel which interface
+            # would be used, purely to read back its address.
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            try:
+                s.connect(("8.8.8.8", 80))
+                pi_ip = s.getsockname()[0]
+            finally:
+                s.close()
+        except OSError:
+            pass
+
+        return jsonify({
+            "camera_ip": CAMERA_IP,
+            "camera_port": CAMERA_PORT,
+            "camera_user": CAMERA_USER,
+            "pi_ip": pi_ip,
+        })
+
+    @app.route("/api/debug/run-tests", methods=["POST"])
+    def api_debug_run_tests():
+        # The fast, pure-Python suite only -- test_tracker.py needs a
+        # real YOLO model load, which is genuinely slow and heavier than
+        # a "is the deployed code healthy" check needs to be. Run that
+        # one by hand (pytest tests/test_tracker.py) if you want that
+        # coverage specifically.
+        project_root = Path(__file__).resolve().parent.parent
+        try:
+            result = subprocess.run(
+                [sys.executable, "-m", "pytest", "tests/test_logic.py", "tests/test_mobs.py", "tests/test_session_records.py", "-q"],
+                capture_output=True, text=True, timeout=60, cwd=str(project_root),
+            )
+            return jsonify({
+                "passed": result.returncode == 0,
+                "output": (result.stdout + result.stderr)[-4000:],  # cap length, this renders in a small pre block
+            })
+        except subprocess.TimeoutExpired:
+            return jsonify({"passed": False, "output": "Test run timed out after 60s."}), 500
+        except Exception as e:
+            return jsonify({"passed": False, "output": f"Could not run tests: {e}"}), 500
 
     # ---------------- Live pipeline (video feed, session-scoped counts) ----------------
     # counter/dashboard_state here are the LIVE, in-memory, current-

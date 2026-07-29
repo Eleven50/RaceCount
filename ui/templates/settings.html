@@ -31,21 +31,40 @@
     </div>
   </section>
 
-  <section class="settings-section" id="advancedLocked">
-    <h2 class="settings-section-title">Advanced</h2>
+  <section class="settings-section" id="debugLocked">
+    <h2 class="settings-section-title">Debug</h2>
     <p class="settings-advanced-note">Locked by default so it isn't one accidental tap away — enter the PIN to view.</p>
     <input class="start-field-input settings-pin-input" type="text" id="pinInput" placeholder="PIN" inputmode="numeric" maxlength="8" autocomplete="off" />
     <button type="button" class="ml-btn ml-btn-primary settings-unlock-btn" id="unlockBtn">Unlock</button>
     <div class="settings-pin-error" id="pinError" style="display:none">Incorrect PIN.</div>
   </section>
 
-  <section class="settings-section" id="advancedUnlocked" style="display:none">
-    <h2 class="settings-section-title">Advanced</h2>
+  <section class="settings-section" id="debugUnlocked" style="display:none">
+    <h2 class="settings-section-title">Debug</h2>
 
-    <a href="/calibrate" class="settings-advanced-link">
-      <span class="settings-row-title">Recalibrate gates</span>
-      <span class="settings-row-sub">Opens the calibration screen</span>
-    </a>
+    <div class="settings-row">
+      <div class="settings-row-label">
+        <span class="settings-row-title">Camera</span>
+        <span class="settings-row-sub" id="debugCameraInfo">—</span>
+      </div>
+    </div>
+
+    <div class="settings-row">
+      <div class="settings-row-label">
+        <span class="settings-row-title">This Pi's address</span>
+        <span class="settings-row-sub">For reaching the dashboard from another device</span>
+      </div>
+      <div class="settings-row-value" id="debugPiIp">—</div>
+    </div>
+
+    <div class="settings-row">
+      <div class="settings-row-label">
+        <span class="settings-row-title">Run tests</span>
+        <span class="settings-row-sub">Core logic suite (not the slower camera/tracking tests)</span>
+      </div>
+      <button type="button" class="ml-btn settings-run-tests-btn" id="runTestsBtn">Run</button>
+    </div>
+    <pre class="settings-log" id="testOutput" style="display:none"></pre>
   </section>
 
 </div>
