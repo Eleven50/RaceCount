@@ -25,6 +25,7 @@ const els = {
   countStraight: document.getElementById("statsCountStraight"),
   countRight: document.getElementById("statsCountRight"),
   sessionTotal: document.getElementById("statsSessionTotal"),
+  rate: document.getElementById("statsRate"),
   mobTotal: document.getElementById("statsMobTotal"),
 };
 
@@ -66,6 +67,16 @@ async function load() {
   els.countStraight.textContent = session.counts.straight;
   els.countRight.textContent = session.counts.right;
   els.sessionTotal.textContent = session.total;
+
+  // Same 30s floor as the Active screen's live rate -- a session that
+  // ended after only a few seconds would otherwise show a meaningless,
+  // wildly inflated number rather than an honest "not enough data".
+  if (session.duration_seconds >= 30) {
+    const perHour = Math.round(session.total / (session.duration_seconds / 3600));
+    els.rate.textContent = `${perHour.toLocaleString()} / hr`;
+  } else {
+    els.rate.textContent = "—";
+  }
 
   els.loading.style.display = "none";
   els.body.style.display = "";

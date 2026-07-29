@@ -31,9 +31,38 @@
   --gate-right: #4a90d9;
 
   --font-ui: -apple-system, "Segoe UI", "Noto Sans", "DejaVu Sans", Helvetica, Arial, sans-serif;
-  --font-numeral: "DejaVu Sans Mono", "Noto Sans Mono", "Liberation Mono", Consolas, monospace;
+  --font-numeral: -apple-system, "Segoe UI", "Noto Sans", "DejaVu Sans", Helvetica, Arial, sans-serif;
 
   --header-height: 64px;
+}
+
+/*
+  Light theme: token overrides only, applied via [data-theme="light"] on
+  <html> (set server-side in base.html from the persisted setting, so
+  the correct theme is present in the very first byte of HTML -- no
+  flash of the wrong theme while JS catches up). Every screen's own CSS
+  reads these same tokens rather than hardcoding colors (confirmed by
+  grepping for stray hex values before building this), so this one
+  block is genuinely sufficient to re-theme the whole app.
+
+  --brand-green/-light and --brand-danger deliberately stay the same in
+  both themes -- brand identity and universally-understood destructive-
+  action red shouldn't shift based on a display preference. --gate-*
+  also stays fixed: amber/green/blue all have enough contrast against
+  both a very dark and a very light background to not need theme-
+  specific variants.
+
+  Calibrate and Splash are deliberately NOT theme-aware -- see their own
+  files for why (camera-overlay UI and a fixed branding moment,
+  respectively, neither of which theming meaningfully applies to).
+*/
+[data-theme="light"] {
+  --brand-navy: #eef1f3;
+  --brand-navy-surface: #ffffff;
+  --brand-navy-surface-alt: #e4e8eb;
+  --brand-navy-border: #d5dbe0;
+  --brand-text: #161e26;
+  --brand-text-muted: #5c6b76;
 }
 
 * {
@@ -149,6 +178,7 @@ html, body {
 .app-header-version {
   font-size: 12px;
   font-family: var(--font-numeral);
+  font-variant-numeric: tabular-nums;
   color: var(--brand-text-muted);
   white-space: nowrap;
 }

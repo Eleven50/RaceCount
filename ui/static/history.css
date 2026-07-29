@@ -167,3 +167,57 @@
   font-weight: 800;
   color: var(--row-color, var(--brand-text));
 }
+
+/* ---------- Sessions drill-down ---------- */
+
+.history-sessions {
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 18px 18px;
+}
+
+.history-card.expanded .history-sessions {
+  display: flex;
+}
+
+.history-sessions-header,
+.history-session-row {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 0.8fr 1.2fr;
+  gap: 8px;
+  padding: 8px 14px;
+  align-items: center;
+}
+
+.history-sessions-header {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--brand-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.history-session-row {
+  background: var(--brand-navy-surface-alt);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--brand-text);
+}
+
+.history-session-total,
+.history-session-rate {
+  font-family: var(--font-numeral);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.history-session-rate {
+  color: var(--brand-green);
+}
+
+.history-sessions-loading {
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--brand-text-muted);
+}

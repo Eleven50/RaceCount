@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}RaceCount — Settings{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='settings.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="settings-screen">
+
+  <section class="settings-section">
+    <h2 class="settings-section-title">General</h2>
+
+    <div class="settings-row">
+      <div class="settings-row-label">
+        <span class="settings-row-title">Theme</span>
+        <span class="settings-row-sub">Applies straight away, on every screen</span>
+      </div>
+      <div class="settings-theme-toggle" id="themeToggle" role="group" aria-label="Theme">
+        <button type="button" class="settings-theme-btn" data-theme="dark">Dark</button>
+        <button type="button" class="settings-theme-btn" data-theme="light">Light</button>
+      </div>
+    </div>
+
+    <div class="settings-row">
+      <div class="settings-row-label">
+        <span class="settings-row-title">Version</span>
+        <span class="settings-row-sub">RaceCount</span>
+      </div>
+      <div class="settings-row-value">{{ app_version }}</div>
+    </div>
+  </section>
+
+  <section class="settings-section" id="advancedLocked">
+    <h2 class="settings-section-title">Advanced</h2>
+    <p class="settings-advanced-note">Locked by default so it isn't one accidental tap away — enter the PIN to view.</p>
+    <input class="start-field-input settings-pin-input" type="text" id="pinInput" placeholder="PIN" inputmode="numeric" maxlength="8" autocomplete="off" />
+    <button type="button" class="ml-btn ml-btn-primary settings-unlock-btn" id="unlockBtn">Unlock</button>
+    <div class="settings-pin-error" id="pinError" style="display:none">Incorrect PIN.</div>
+  </section>
+
+  <section class="settings-section" id="advancedUnlocked" style="display:none">
+    <h2 class="settings-section-title">Advanced</h2>
+
+    <a href="/calibrate" class="settings-advanced-link">
+      <span class="settings-row-title">Recalibrate gates</span>
+      <span class="settings-row-sub">Opens the calibration screen</span>
+    </a>
+  </section>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='settings.js') }}"></script>
+{% endblock %}

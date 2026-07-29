@@ -48,6 +48,7 @@
 
 .start-panel {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -90,6 +91,7 @@
 
 .start-field-input {
   flex: 1;
+  min-width: 0;
   background: var(--brand-navy-surface);
   border: 2px solid var(--brand-navy-border);
   border-radius: 14px;

@@ -16,11 +16,53 @@ let mobsCache = [];
 let expandedId = null;
 let armedDeleteId = null;
 let armedDeleteTimer = null;
+let sessionsCache = {}; // mob_id -> array of session records, fetched lazily on expand
 
 function escapeHtml(str) {
   const div = document.createElement("div");
   div.textContent = str;
   return div.innerHTML;
+}
+
+function formatRate(total, durationSeconds) {
+  // Same 30s floor used on Active and Session Stats -- a very short
+  // session's rate isn't a meaningful number, just noise.
+  if (durationSeconds < 30) return "—";
+  const perHour = Math.round(total / (durationSeconds / 3600));
+  return `${perHour.toLocaleString()} / hr`;
+}
+
+async function loadSessionsForMob(mobId, container) {
+  if (sessionsCache[mobId]) {
+    renderSessions(sessionsCache[mobId], container);
+    return;
+  }
+  container.innerHTML = '<div class="history-sessions-loading">Loading sessions…</div>';
+  try {
+    const res = await fetch(`/api/sessions?mob_id=${encodeURIComponent(mobId)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    sessionsCache[mobId] = data.sessions || [];
+    renderSessions(sessionsCache[mobId], container);
+  } catch (err) {
+    console.error("failed to load sessions for mob", mobId, err);
+    container.innerHTML = '<div class="history-sessions-loading">Couldn\'t load past sessions.</div>';
+  }
+}
+
+function renderSessions(sessions, container) {
+  if (sessions.length === 0) {
+    container.innerHTML = '<div class="history-sessions-loading">No individual sessions recorded.</div>';
+    return;
+  }
+  container.innerHTML = sessions.map((s) => `
+    <div class="history-session-row">
+      <span class="history-session-date">${formatShortDate(s.ended_at)}</span>
+      <span class="history-session-duration">${formatDuration(s.duration_seconds)}</span>
+      <span class="history-session-total">${s.total}</span>
+      <span class="history-session-rate">${formatRate(s.total, s.duration_seconds)}</span>
+    </div>
+  `).join("");
 }
 
 async function loadMobs() {
@@ -51,6 +93,7 @@ async function confirmDelete(mobId) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     mobsCache = mobsCache.filter((m) => m.id !== mobId);
+    delete sessionsCache[mobId];
     if (expandedId === mobId) expandedId = null;
     disarmDelete();
     render();
@@ -124,8 +167,21 @@ function render() {
       </div>
     `).join("");
 
+    const sessionsSection = document.createElement("div");
+    sessionsSection.className = "history-sessions";
+    sessionsSection.innerHTML = `
+      <div class="history-sessions-header">
+        <span>Date</span><span>Duration</span><span>Count</span><span>Rate</span>
+      </div>
+      <div class="history-sessions-list"></div>
+    `;
+    if (isExpanded) {
+      loadSessionsForMob(mob.id, sessionsSection.querySelector(".history-sessions-list"));
+    }
+
     card.appendChild(row);
     card.appendChild(breakdown);
+    card.appendChild(sessionsSection);
     els.list.appendChild(card);
   }
 }

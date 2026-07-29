@@ -141,6 +141,24 @@
   font-weight: 700;
 }
 
+.stats-total-rate {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--brand-text-muted);
+  padding-top: 4px;
+  border-top: 1px solid var(--brand-navy-border);
+}
+
+.stats-total-rate strong {
+  font-family: var(--font-numeral);
+  font-variant-numeric: tabular-nums;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--brand-text);
+}
+
 .stats-done-btn {
   width: 100%;
   padding: 18px;

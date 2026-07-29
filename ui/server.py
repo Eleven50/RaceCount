@@ -20,7 +20,24 @@ logger = logging.getLogger("racecount.ui")
 
 # Bumped manually. Shown in the header on every screen — change this one
 # constant rather than hunting through templates when it needs updating.
-APP_VERSION = "v1.0"
+# Format: v1.MAJOR.MINOR. The leading "1" is a fixed generation marker
+# (would only change for a genuine v2 rewrite). MAJOR increments for a
+# new screen or a significant visual/structural change; MINOR increments
+# for a bugfix or small tweak that doesn't add a screen. Bump this by
+# hand as part of whatever change warrants it -- there's no automated
+# tracking, so accuracy from here on depends on actually doing this.
+#
+# Reconstructed history to establish where this starts counting from
+# (not perfectly precise for the earliest phases, but a genuine account
+# of the real major phases, not an arbitrary number):
+#   1 - multi-screen split (Home/Start/Active/Calibrate) from the
+#       original single-page dashboard
+#   2 - History + Session Stats screens added
+#   3 - Splash screen added
+#   4 - RaceCount rebrand (replaced the original MobLogic branding)
+#   5 - Settings screen, light/dark theme, throughput stats, numeral
+#       font fix (this change)
+APP_VERSION = "v1.5.0"
 
 
 class DashboardState:
@@ -149,7 +166,7 @@ class SessionState:
             return self._started_at
 
 
-def create_app(dashboard_state: DashboardState, counter, zone_manager, mob_store, session_record_store, active_mob_state: ActiveMobState, session_state: SessionState) -> Flask:
+def create_app(dashboard_state: DashboardState, counter, zone_manager, mob_store, session_record_store, active_mob_state: ActiveMobState, session_state: SessionState, settings_store) -> Flask:
     app = Flask(__name__)
     app.logger.setLevel(logging.WARNING)
     # werkzeug logs one line per HTTP request by default, including every
@@ -181,27 +198,59 @@ def create_app(dashboard_state: DashboardState, counter, zone_manager, mob_store
 
     @app.route("/splash")
     def splash():
+        # Deliberately NOT theme-aware -- a fixed branding moment, same
+        # reasoning as why it's exempt from the header/back-link system
+        # every other screen shares.
         return render_template("splash.html")
 
     @app.route("/")
     def home():
-        return render_template("home.html", app_version=APP_VERSION, show_back=False)
+        return render_template("home.html", app_version=APP_VERSION, show_back=False, theme=settings_store.get_theme())
 
     @app.route("/active")
     def active():
-        return render_template("active.html", app_version=APP_VERSION)
+        return render_template("active.html", app_version=APP_VERSION, theme=settings_store.get_theme())
 
     @app.route("/start")
     def start():
-        return render_template("start.html", app_version=APP_VERSION)
+        return render_template("start.html", app_version=APP_VERSION, theme=settings_store.get_theme())
 
     @app.route("/history")
     def history():
-        return render_template("history.html", app_version=APP_VERSION)
+        return render_template("history.html", app_version=APP_VERSION, theme=settings_store.get_theme())
 
     @app.route("/session-stats/<record_id>")
     def session_stats(record_id):
-        return render_template("session_stats.html", app_version=APP_VERSION, record_id=record_id)
+        return render_template("session_stats.html", app_version=APP_VERSION, record_id=record_id, theme=settings_store.get_theme())
+
+    @app.route("/settings")
+    def settings():
+        return render_template("settings.html", app_version=APP_VERSION, theme=settings_store.get_theme())
+
+    @app.route("/api/settings")
+    def api_settings_get():
+        return jsonify({"theme": settings_store.get_theme()})
+
+    @app.route("/api/settings/theme", methods=["POST"])
+    def api_settings_set_theme():
+        data = request.get_json(silent=True) or {}
+        theme = data.get("theme")
+        try:
+            settings_store.set_theme(theme)
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+        return jsonify({"theme": settings_store.get_theme()})
+
+    @app.route("/api/settings/verify-pin", methods=["POST"])
+    def api_settings_verify_pin():
+        data = request.get_json(silent=True) or {}
+        pin = data.get("pin", "")
+        # Deliberately no lockout/rate-limiting -- this is a speed bump
+        # against casual taps on a shared kiosk, not a security boundary
+        # meant to resist someone actually trying to break in.
+        if settings_store.check_advanced_pin(pin):
+            return jsonify({"ok": True})
+        return jsonify({"ok": False}), 403
 
     # ---------------- Live pipeline (video feed, session-scoped counts) ----------------
     # counter/dashboard_state here are the LIVE, in-memory, current-
@@ -311,6 +360,7 @@ def create_app(dashboard_state: DashboardState, counter, zone_manager, mob_store
             "active": session_state.is_active(),
             "calibrated": zone_manager.calibrated,
             "mob": mob_to_json(mob) if mob else None,
+            "started_at": session_state.get_started_at(),
         })
 
     @app.route("/api/session/start", methods=["POST"])
@@ -440,7 +490,7 @@ def create_app(dashboard_state: DashboardState, counter, zone_manager, mob_store
     return app
 
 
-def run_dashboard(dashboard_state: DashboardState, counter, zone_manager, mob_store, session_record_store, active_mob_state: ActiveMobState, session_state: SessionState, host: str = "0.0.0.0", port: int = 8080):
+def run_dashboard(dashboard_state: DashboardState, counter, zone_manager, mob_store, session_record_store, active_mob_state: ActiveMobState, session_state: SessionState, settings_store, host: str = "0.0.0.0", port: int = 8080):
     """
     Binds to 0.0.0.0 so the dashboard is also reachable from other devices
     on the same LAN (e.g. checking counts from a phone in the yard) — this
@@ -451,5 +501,5 @@ def run_dashboard(dashboard_state: DashboardState, counter, zone_manager, mob_st
     short API polls be served concurrently. use_reloader must stay False
     since this runs from a thread-owning process, not the Flask CLI.
     """
-    app = create_app(dashboard_state, counter, zone_manager, mob_store, session_record_store, active_mob_state, session_state)
+    app = create_app(dashboard_state, counter, zone_manager, mob_store, session_record_store, active_mob_state, session_state, settings_store)
     app.run(host=host, port=port, threaded=True, use_reloader=False)

@@ -81,6 +81,7 @@ easiest thing to get confused navigating the code):
 | `logic/` | `zones.py` (pure geometry), `direction_logic.py` (the confirmation/jitter logic) | change how a "crossing" is defined or confirmed |
 | `counting/` | `counter.py` | change live-session counting behaviour |
 | `mobs/` | `mob_store.py` (mobs), `session_record.py` (session snapshots) | change what a mob or session record stores |
+| `settings/` | `settings_store.py` — theme preference, Advanced-section PIN | change what's user-configurable |
 | `ui/server.py` | every Flask route, plus the small shared-state classes (`DashboardState`, `ActiveMobState`, `SessionState`) | add an API endpoint, change what a screen's backend does |
 | `ui/templates/` + `ui/static/` | one `.html` + `.css` + `.js` per screen, plus `base.html`/`brand.css`/`brand.js` (shared header, design tokens, date formatting) | change a screen's layout, styling, or client-side behaviour |
 | `main.py` | the pipeline loop + wiring everything together at startup | change the session-gating logic, what happens on Start/End Session at the pipeline level |
@@ -152,6 +153,12 @@ These are all explained in more depth as comments in the relevant file
   depend on Wayland compositor layer ordering that a fullscreen kiosk
   browser can't reliably cooperate with — see the README's "on-screen
   keyboard" section for the full story.
+- Light/dark theme is token overrides only (`[data-theme="light"]` in
+  `brand.css`), applied server-side via `<html data-theme="...">` in
+  `base.html` from the persisted setting — no client-side re-theme flash.
+  Any new screen CSS should read `var(--brand-*)` rather than hardcode a
+  color, or it won't pick up theme changes. Calibrate and Splash are
+  deliberately exempt (camera-overlay UI and a fixed branding moment).
 
 ## What's NOT in the code
 

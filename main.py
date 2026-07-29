@@ -45,6 +45,7 @@ from logic.direction_logic import DirectionClassifier
 from counting.counter import DirectionCounter
 from mobs.mob_store import MobStore
 from mobs.session_record import SessionRecordStore
+from settings.settings_store import SettingsStore
 from ui.server import ActiveMobState, DashboardState, SessionState, run_dashboard
 
 LOG_DIR = Path(__file__).resolve().parent / "logs"
@@ -226,6 +227,7 @@ def main():
     dashboard_state = DashboardState()
     mob_store = MobStore(data_dir=str(Path(__file__).resolve().parent / "data" / "mobs"))
     session_record_store = SessionRecordStore(data_dir=str(Path(__file__).resolve().parent / "data" / "sessions"))
+    settings_store = SettingsStore(data_dir=str(Path(__file__).resolve().parent / "data"))
     active_mob_state = ActiveMobState()
     session_state = SessionState()
 
@@ -252,7 +254,7 @@ def main():
     pipeline_thread.start()
 
     try:
-        run_dashboard(dashboard_state, counter, zone_manager, mob_store, session_record_store, active_mob_state, session_state)
+        run_dashboard(dashboard_state, counter, zone_manager, mob_store, session_record_store, active_mob_state, session_state, settings_store)
     finally:
         logger.info("Shutting down")
         stop_event.set()

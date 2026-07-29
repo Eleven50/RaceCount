@@ -215,6 +215,31 @@
   white-space: nowrap;
 }
 
+/* ---------- Throughput rate ---------- */
+
+.active-rate {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+}
+
+.active-rate-value {
+  font-family: var(--font-numeral);
+  font-variant-numeric: tabular-nums;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--brand-green);
+}
+
+.active-rate-unit {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--brand-text-muted);
+}
+
 /* ---------- Buttons ---------- */
 
 .active-buttons {

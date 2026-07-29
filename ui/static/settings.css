@@ -1,0 +1,132 @@
+.settings-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.settings-section {
+  background: var(--brand-navy-surface);
+  border: 1px solid var(--brand-navy-border);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settings-section-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--brand-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.settings-row-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-row-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--brand-text);
+}
+
+.settings-row-sub {
+  font-size: 13px;
+  color: var(--brand-text-muted);
+}
+
+.settings-row-value {
+  font-family: var(--font-numeral);
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--brand-text-muted);
+}
+
+/* ---------- Theme toggle ---------- */
+
+.settings-theme-toggle {
+  display: flex;
+  background: var(--brand-navy-surface-alt);
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.settings-theme-btn {
+  min-height: 44px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--brand-text-muted);
+  font-size: 15px;
+  font-weight: 700;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.settings-theme-btn.active {
+  background: var(--brand-green);
+  color: #0c1408;
+}
+
+/* ---------- Advanced: locked state ---------- */
+
+.settings-advanced-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--brand-text-muted);
+}
+
+.settings-pin-input {
+  height: 56px;
+  font-size: 20px;
+  text-align: center;
+  letter-spacing: 0.3em;
+}
+
+.settings-unlock-btn {
+  min-height: 48px;
+}
+
+.settings-pin-error {
+  font-size: 13px;
+  color: var(--brand-danger);
+  font-weight: 600;
+}
+
+/* ---------- Advanced: unlocked state ---------- */
+
+.settings-advanced-link {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+  background: var(--brand-navy-surface-alt);
+  border-radius: 12px;
+  text-decoration: none;
+}
+
+.settings-advanced-link .settings-row-title {
+  color: var(--brand-text);
+}
+
+.settings-advanced-link .settings-row-sub {
+  color: var(--brand-text-muted);
+}
