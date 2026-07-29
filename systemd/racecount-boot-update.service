@@ -13,10 +13,19 @@ User=baileyw
 # the timeout just means racecount.service starts on whatever code was
 # already on disk, same as it always would have.
 #
+# 8s, not the more generous budget this started with -- this runs
+# BEFORE racecount.service (and therefore before the kiosk can show
+# anything at all), so its timeout directly extends the blank screen
+# during boot. That budget was really covering WiFi association time,
+# not the git operation itself (fast once network's actually up, 1-3s
+# typically) -- 8s still gives a real shot at succeeding on a
+# reasonably-behaving network, while capping the worst case (no
+# network at all) at something that doesn't make boot feel broken.
+#
 # Reuses racecount-update.sh unchanged rather than duplicating the
 # fetch/pull/test/deploy logic in a second script -- the only thing
 # different about the boot context is the hard time bound below.
-ExecStart=-/usr/bin/timeout 30 /home/baileyw/racecount/systemd/racecount-update.sh
+ExecStart=-/usr/bin/timeout 8 /home/baileyw/racecount/systemd/racecount-update.sh
 
 # Installed automatically as a side effect of racecount.service's own
 # Wants=/After= lines below -- no separate `systemctl enable` needed

@@ -38,12 +38,6 @@
   color: rgba(12, 20, 8, 0.7);
 }
 
-.home-tile-blank {
-  border-style: dashed;
-  border-color: var(--brand-navy-border);
-  /* Reserved, deliberately empty -- not a mistake if it looks unstyled. */
-}
-
 .home-tile-secondary {
   background: var(--brand-navy-surface);
 }
@@ -68,7 +62,7 @@
 
 .home-tile-sub {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 @media (max-aspect-ratio: 4/5) {

@@ -216,20 +216,40 @@ def pipeline_loop(
 def main():
     logger.info("RaceCount starting up")
 
-    stream = LowLatencyRTSPStream(build_rtsp_url())
-    stream.start()
-
-    detector = YoloEngine(model_path=str(Path(__file__).resolve().parent / "models" / "yolov8n.pt"))
-    tracker_module = SheepTracker()
+    # Constructed first since these are all fast/instant -- lets Flask
+    # start responding right away, before the camera connects or the
+    # YOLO model finishes loading. Previously run_dashboard() was the
+    # LAST thing called, blocking on app.run() -- meaning the entire
+    # camera-connect + model-load time got added to how long
+    # launch_kiosk.sh's kiosk splash sits there polling for the backend,
+    # extending the blank-screen window during boot for no real reason
+    # (Flask doesn't touch the detector at all -- only the pipeline
+    # thread does).
     zone_manager = ZoneManager(config_path=str(Path(__file__).resolve().parent / "logic" / "zones_config.json"))
     counter = DirectionCounter()
-    classifier = DirectionClassifier(zone_manager, counter)
     dashboard_state = DashboardState()
     mob_store = MobStore(data_dir=str(Path(__file__).resolve().parent / "data" / "mobs"))
     session_record_store = SessionRecordStore(data_dir=str(Path(__file__).resolve().parent / "data" / "sessions"))
     settings_store = SettingsStore(data_dir=str(Path(__file__).resolve().parent / "data"))
     active_mob_state = ActiveMobState()
     session_state = SessionState()
+
+    dashboard_thread = threading.Thread(
+        target=run_dashboard,
+        args=(dashboard_state, counter, zone_manager, mob_store, session_record_store, active_mob_state, session_state, settings_store),
+        daemon=True,
+        name="dashboard",
+    )
+    dashboard_thread.start()
+
+    # The slower part -- camera connection + YOLO model load -- now
+    # happens after Flask is already up and responding, not before.
+    stream = LowLatencyRTSPStream(build_rtsp_url())
+    stream.start()
+
+    detector = YoloEngine(model_path=str(Path(__file__).resolve().parent / "models" / "yolov8n.pt"))
+    tracker_module = SheepTracker()
+    classifier = DirectionClassifier(zone_manager, counter)
 
     notifier = None
     try:
@@ -254,7 +274,10 @@ def main():
     pipeline_thread.start()
 
     try:
-        run_dashboard(dashboard_state, counter, zone_manager, mob_store, session_record_store, active_mob_state, session_state, settings_store)
+        # Blocks here now instead of run_dashboard() blocking -- same
+        # "run forever until stopped" role, just held by a different
+        # thread's join since run_dashboard is threaded off above.
+        pipeline_thread.join()
     finally:
         logger.info("Shutting down")
         stop_event.set()

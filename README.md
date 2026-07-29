@@ -191,6 +191,56 @@ just being reachable over the network), also set up the kiosk display —
 see the next section, since which method you need depends on which
 desktop compositor your Pi is actually running.
 
+## Boot: no kernel text, no rainbow splash, kiosk as fast as possible
+
+Two separate, real changes here — worth knowing the difference, since
+one's a config tweak and one's a genuine architecture change.
+
+**Kernel text and the rainbow splash are suppressed** via
+`/boot/firmware/cmdline.txt` (appended, not replacing the existing
+line — this file must stay on one line or the Pi won't boot at all):
+```
+quiet loglevel=0 vt.global_cursor_default=0 logo.nologo consoleblank=0
+```
+and `/boot/firmware/config.txt`:
+```
+disable_splash=1
+```
+Always back up both before touching them (`cp file file.bak`) — a
+mistake in `cmdline.txt` specifically can mean the Pi doesn't boot at
+all, not just "something's broken but SSH still works."
+
+**A custom logo during that early window was deliberately not
+pursued.** The standard approach (replace Plymouth's theme image,
+rebuild initramfs) is genuinely unreliable on Bookworm, and worse on Pi
+5 specifically — multiple independent, recent reports confirm it works
+on shutdown but not boot, or works once and silently reverts on the
+next `apt upgrade`. One traces it to something structural: the splash
+shows *before* initramfs even loads, which is why editing files inside
+the theme directory doesn't reliably reach it. There's also a
+DSI-specific wrinkle — DSI panels (like this display) bind late in
+boot, so even a working Plymouth config might show nothing for much of
+that window regardless, simply because the screen itself isn't
+awake yet. Given the real risk (this touches initramfs, genuinely
+boot-critical) against low confidence it'd even work reliably, the
+better trade is a brief blank screen there instead, with effort spent
+shortening that window rather than filling it.
+
+**Shortening that window is where the real gains are**, and these are
+both safe, application-level changes, not kernel-level ones:
+- `racecount-boot-update.service`'s timeout dropped from 30s to 8s.
+  That timeout was really covering WiFi association time, not the git
+  operation itself (fast once network's actually up) — and it runs
+  *before* `racecount.service`, so its timeout directly extended the
+  blank window if network was slow to come up.
+- `main.py`'s startup was restructured so Flask starts responding
+  immediately in its own thread, before the camera connects or the
+  YOLO model finishes loading — previously `run_dashboard()` was the
+  *last* thing called, meaning the entire model-load time got added to
+  how long `launch_kiosk.sh`'s splash sits there polling for the
+  backend to come up, for no real reason (Flask never touches the
+  detector at all — only the pipeline thread does).
+
 ## Kiosk display setup
 
 This took real trial-and-error to get right on a real device, and the
@@ -249,17 +299,15 @@ you `Alt+F4` out), so you'd be doing any file browsing or WiFi
 reconfiguration from a terminal from then on — a reasonable tradeoff for
 a dedicated device, but worth choosing deliberately rather than by accident.
 
-**The on-screen keyboard not appearing over the kiosk window** is a real,
-currently-open upstream limitation, not a config mistake: Squeekboard
-(Raspberry Pi OS's on-screen keyboard) is hardcoded to labwc's "top"
-compositor layer, while Chromium's `--kiosk` flag puts the browser on
-the "fullscreen" layer, which sits above "top" — the keyboard is
-structurally unable to render above it
-([labwc/labwc#2926](https://github.com/labwc/labwc/issues/2926)).
-`systemd/launch_kiosk.sh` already works around this by using
-`--start-maximized --app=URL` instead of `--kiosk`, which looks the same
-in practice but sits on a layer the keyboard can appear above. If you
-ever swap that back to `--kiosk` for any reason, this will come back.
+**The on-screen keyboard not appearing over the kiosk window** was a
+real, genuinely-open upstream limitation, not a config mistake:
+Squeekboard (Raspberry Pi OS's own on-screen keyboard) is hardcoded to
+labwc's "top" compositor layer, while Chromium's `--kiosk` flag puts the
+browser on the "fullscreen" layer, which sits above "top" — the OS
+keyboard is structurally unable to render above it
+([labwc/labwc#2926](https://github.com/labwc/labwc/issues/2926)). This
+isn't something to work around here anymore, though — see the next
+section for why, and why `launch_kiosk.sh` is back on plain `--kiosk`.
 
 ## The on-screen keyboard is built into the app, not the OS
 
