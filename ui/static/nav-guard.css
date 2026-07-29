@@ -1,0 +1,60 @@
+/*
+  Reconnect overlay for nav-guard.js -- only ever appears during a
+  genuine, brief backend blip mid-navigation. See nav-guard.js for why
+  this exists.
+*/
+
+#rc-nav-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 800;
+  background: rgba(22, 30, 38, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rc-nav-box {
+  background: var(--brand-navy-surface);
+  border: 1px solid var(--brand-navy-border);
+  border-radius: 16px;
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  color: var(--brand-text);
+  font-size: 16px;
+  font-weight: 600;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+.rc-nav-spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid var(--brand-navy-border);
+  border-top-color: var(--brand-green);
+  animation: rc-nav-spin 0.8s linear infinite;
+}
+
+@keyframes rc-nav-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.rc-nav-box button {
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 10px;
+  border: none;
+  background: var(--brand-green);
+  color: #0c1408;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.rc-nav-box button:active {
+  background: var(--brand-green-light);
+}

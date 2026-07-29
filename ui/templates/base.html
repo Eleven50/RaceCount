@@ -6,13 +6,17 @@
   <title>{% block title %}RaceCount{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='brand.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='keyboard.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='nav-guard.css') }}" />
   {% block extra_css %}{% endblock %}
 </head>
 <body>
   <div class="app-shell">
     <header class="app-header">
       {% if show_back|default(true) %}
-      <a href="/" class="app-header-back" id="headerBackLink" aria-label="Back to Home" title="Back to Home">&larr;</a>
+      <a href="/" class="app-header-back" id="headerBackLink" aria-label="Back to Home" title="Back to Home">
+        <span class="app-header-back-arrow" aria-hidden="true">&larr;</span>
+        <span class="app-header-back-label">Back</span>
+      </a>
       {% endif %}
       <div class="app-header-brand">
         <img class="app-header-icon" src="{{ url_for('static', filename='img/logo-icon-white.png') }}" alt="RaceCount" />
@@ -30,6 +34,7 @@
   </div>
   <script src="{{ url_for('static', filename='brand.js') }}"></script>
   <script src="{{ url_for('static', filename='keyboard.js') }}"></script>
+  <script src="{{ url_for('static', filename='nav-guard.js') }}"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

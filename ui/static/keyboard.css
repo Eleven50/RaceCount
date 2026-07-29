@@ -68,6 +68,16 @@
   font-weight: 700;
 }
 
+/* Backspace needs to be a bit bigger than a letter key (it's tapped
+   often, worth a larger target) but not as wide as the 123/Done
+   buttons -- rc-kb-key-wide's flex:2 + no max-width was making it
+   balloon disproportionately, especially in the shorter bottom letter
+   row where there's more leftover space per flex item to begin with. */
+.rc-kb-key-backspace {
+  max-width: 84px;
+  flex: 1.3;
+}
+
 .rc-kb-key-space {
   max-width: none;
   flex: 6;

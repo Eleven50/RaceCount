@@ -294,6 +294,26 @@ explicitly enforces each field's `maxlength`, since setting `.value`
 programmatically (the only option here — there's no real keystroke to
 simulate) bypasses the browser's native enforcement of it entirely.
 
+## Resilient navigation
+
+Every internal link (the header's Back button, Home's nav tiles, etc.)
+goes through `ui/static/nav-guard.js`, loaded globally via `base.html`,
+rather than navigating directly. It checks the lightweight `/api/status`
+endpoint first — on a healthy backend this costs a few imperceptible
+milliseconds — and only if that fails does anything become visible: a
+small on-brand "Reconnecting…" overlay that retries quietly for a few
+seconds before offering a manual retry, instead of the browser's own
+generic "can't reach this page" error.
+
+This exists because a plain `<a href>` hitting the backend during a
+brief restart (the auto-updater applying a new commit, or any other
+transient blip) would otherwise show that raw browser error page —
+survivable, but not something a kiosk device should ever expose someone
+to. Fixing navigation itself to tolerate a brief blip is more robust
+than only trying to avoid every possible collision window (which the
+auto-updater's session-aware deferral already reduces, but can't
+eliminate entirely for idle, non-session browsing).
+
 ## Auto-updates from GitHub
 
 Once this is pushed to a repo, the Pi can pull and deploy new commits on

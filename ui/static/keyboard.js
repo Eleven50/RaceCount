@@ -55,7 +55,7 @@ function render(el) {
         key.classList.add("rc-kb-key-shift");
         if (shiftOn) key.classList.add("rc-kb-active");
       }
-      if (label === "\u232b") key.classList.add("rc-kb-key-wide");
+      if (label === "\u232b") key.classList.add("rc-kb-key-backspace");
       key.textContent = display;
       key.dataset.key = label;
       rowEl.appendChild(key);
