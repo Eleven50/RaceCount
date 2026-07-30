@@ -19,9 +19,24 @@ const els = {
   debugUnlocked: document.getElementById("debugUnlocked"),
   cameraInfo: document.getElementById("debugCameraInfo"),
   piIp: document.getElementById("debugPiIp"),
+  cpuTemp: document.getElementById("debugCpuTemp"),
+  memory: document.getElementById("debugMemory"),
+  disk: document.getElementById("debugDisk"),
+  load: document.getElementById("debugLoad"),
+  uptime: document.getElementById("debugUptime"),
   runTestsBtn: document.getElementById("runTestsBtn"),
   testOutput: document.getElementById("testOutput"),
 };
+
+function formatUptime(seconds) {
+  if (seconds == null) return "—";
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${mins}m`;
+  return `${mins}m`;
+}
 
 function updateThemeButtons() {
   const active = document.documentElement.getAttribute("data-theme") || "dark";
@@ -56,6 +71,17 @@ async function loadDebugInfo() {
     const data = await res.json();
     els.cameraInfo.textContent = `${data.camera_user}@${data.camera_ip}:${data.camera_port}`;
     els.piIp.textContent = data.pi_ip;
+    els.cpuTemp.textContent = data.cpu_temp_c != null ? `${data.cpu_temp_c}\u00b0C` : "not available";
+    els.memory.textContent = data.memory
+      ? `${data.memory.available_mb.toLocaleString()} MB free of ${data.memory.total_mb.toLocaleString()} MB (${data.memory.used_pct}% used)`
+      : "not available";
+    els.disk.textContent = data.disk
+      ? `${data.disk.free_gb} GB free of ${data.disk.total_gb} GB (${data.disk.used_pct}% used)`
+      : "not available";
+    els.load.textContent = data.load_average
+      ? `${data.load_average["1min"]} / ${data.load_average["5min"]} / ${data.load_average["15min"]}`
+      : "not available";
+    els.uptime.textContent = formatUptime(data.uptime_seconds);
   } catch (err) {
     console.error("failed to load debug info", err);
     els.cameraInfo.textContent = "Couldn't load.";

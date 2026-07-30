@@ -9,6 +9,8 @@ video frame request). It holds only the single latest JPEG — never a
 queue — consistent with the rest of the system's no-buffering design.
 """
 import logging
+import os
+import shutil
 import socket
 import subprocess
 import sys
@@ -256,6 +258,61 @@ def create_app(dashboard_state: DashboardState, counter, zone_manager, mob_store
             return jsonify({"ok": True})
         return jsonify({"ok": False}), 403
 
+    def _read_cpu_temp_celsius():
+        # Linux-generic path, not the Pi-specific vcgencmd tool -- works
+        # without needing that binary to be on PATH, and degrades
+        # cleanly (returns None) on non-Linux or a system with no
+        # exposed thermal zone, rather than raising.
+        try:
+            with open("/sys/class/thermal/thermal_zone0/temp") as f:
+                return round(int(f.read().strip()) / 1000, 1)
+        except (FileNotFoundError, ValueError, OSError):
+            return None
+
+    def _read_uptime_seconds():
+        try:
+            with open("/proc/uptime") as f:
+                return round(float(f.read().split()[0]), 0)
+        except (FileNotFoundError, ValueError, OSError, IndexError):
+            return None
+
+    def _read_memory_info():
+        # /proc/meminfo values are in kB regardless of platform word
+        # size -- no extra dependency (e.g. psutil) needed for this.
+        try:
+            values = {}
+            with open("/proc/meminfo") as f:
+                for line in f:
+                    key, _, rest = line.partition(":")
+                    if key in ("MemTotal", "MemAvailable"):
+                        values[key] = int(rest.strip().split()[0])
+            if "MemTotal" in values and "MemAvailable" in values:
+                total_mb = values["MemTotal"] / 1024
+                available_mb = values["MemAvailable"] / 1024
+                used_pct = round(100 * (1 - available_mb / total_mb), 1) if total_mb else None
+                return {"total_mb": round(total_mb), "available_mb": round(available_mb), "used_pct": used_pct}
+        except (FileNotFoundError, ValueError, OSError):
+            pass
+        return None
+
+    def _read_disk_info():
+        try:
+            usage = shutil.disk_usage(str(Path(__file__).resolve().parent.parent))
+            return {
+                "total_gb": round(usage.total / (1024 ** 3), 1),
+                "free_gb": round(usage.free / (1024 ** 3), 1),
+                "used_pct": round(100 * usage.used / usage.total, 1) if usage.total else None,
+            }
+        except OSError:
+            return None
+
+    def _read_load_average():
+        try:
+            one, five, fifteen = os.getloadavg()
+            return {"1min": round(one, 2), "5min": round(five, 2), "15min": round(fifteen, 2)}
+        except OSError:
+            return None
+
     @app.route("/api/debug/info")
     def api_debug_info():
         # Camera username and IP are genuinely useful for confirming
@@ -282,27 +339,34 @@ def create_app(dashboard_state: DashboardState, counter, zone_manager, mob_store
             "camera_port": CAMERA_PORT,
             "camera_user": CAMERA_USER,
             "pi_ip": pi_ip,
+            "cpu_temp_c": _read_cpu_temp_celsius(),
+            "uptime_seconds": _read_uptime_seconds(),
+            "memory": _read_memory_info(),
+            "disk": _read_disk_info(),
+            "load_average": _read_load_average(),
         })
 
     @app.route("/api/debug/run-tests", methods=["POST"])
     def api_debug_run_tests():
-        # The fast, pure-Python suite only -- test_tracker.py needs a
-        # real YOLO model load, which is genuinely slow and heavier than
-        # a "is the deployed code healthy" check needs to be. Run that
-        # one by hand (pytest tests/test_tracker.py) if you want that
-        # coverage specifically.
+        # The full suite, including test_tracker.py's real YOLO model
+        # load -- genuinely slower than the quick pure-Python subset
+        # this used to run, but "ALL the tests" means all of them,
+        # including the one that actually exercises the model. Timeout
+        # bumped accordingly so a real (if slower) Pi doesn't get a
+        # false failure just from running out of time, not from a real
+        # test failure.
         project_root = Path(__file__).resolve().parent.parent
         try:
             result = subprocess.run(
-                [sys.executable, "-m", "pytest", "tests/test_logic.py", "tests/test_mobs.py", "tests/test_session_records.py", "-q"],
-                capture_output=True, text=True, timeout=60, cwd=str(project_root),
+                [sys.executable, "-m", "pytest", "tests/", "-q"],
+                capture_output=True, text=True, timeout=180, cwd=str(project_root),
             )
             return jsonify({
                 "passed": result.returncode == 0,
                 "output": (result.stdout + result.stderr)[-4000:],  # cap length, this renders in a small pre block
             })
         except subprocess.TimeoutExpired:
-            return jsonify({"passed": False, "output": "Test run timed out after 60s."}), 500
+            return jsonify({"passed": False, "output": "Test run timed out after 180s."}), 500
         except Exception as e:
             return jsonify({"passed": False, "output": f"Could not run tests: {e}"}), 500
 
