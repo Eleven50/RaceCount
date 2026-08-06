@@ -140,6 +140,13 @@
   letter-spacing: 0.02em;
 }
 
+.cal-partial-warning {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #f2c14e;
+}
+
 .cal-progress {
   flex: 0 0 auto;
   font-family: var(--font-numeral);

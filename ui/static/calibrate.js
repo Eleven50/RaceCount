@@ -19,8 +19,7 @@
   to its native resolution (object-fit: contain).
 */
 
-const GATE_SEQUENCE = ["left", "straight", "right"];
-const GATE_DISPLAY = {
+const ALL_GATE_INFO = {
   left: { label: "Gate A", direction: "LEFT", cssClass: "gate-left" },
   straight: { label: "Gate B", direction: "STRAIGHT", cssClass: "gate-straight" },
   right: { label: "Gate C", direction: "RIGHT", cssClass: "gate-right" },
@@ -28,6 +27,9 @@ const GATE_DISPLAY = {
 const POINT_LABELS = ["Point A", "Point B"];
 
 const els = {
+  calScreen: document.getElementById("calImageWrap"),
+  legend: document.getElementById("calLegend"),
+  partialWarning: document.getElementById("calPartialWarning"),
   prompt: document.getElementById("calPrompt"),
   progress: document.getElementById("calProgress"),
   imageWrap: document.getElementById("calImageWrap"),
@@ -45,8 +47,35 @@ const els = {
   toast: document.getElementById("calToast"),
 };
 
-let gatePoints = { left: [], straight: [], right: [] }; // each up to 2 [x,y] pairs, image-pixel space
-let confirmedGateCount = 0; // 0..3 — only advances when "Next gate" is explicitly pressed
+// Which gates this calibration run actually covers -- server-rendered
+// (see server.py's /calibrate route for how it's decided: the pending
+// selection if mid-setup, otherwise whatever's currently calibrated, or
+// all 3 as a last resort). Drives everything below: how many points are
+// expected, what the legend says, whether the partial-calibration
+// warning shows, and what gets saved.
+const GATE_SEQUENCE = JSON.parse(els.calScreen.dataset.activeGates || '["left","straight","right"]');
+const GATE_DISPLAY = Object.fromEntries(GATE_SEQUENCE.map((g, i) => [
+  g, { ...ALL_GATE_INFO[g], label: `Gate ${String.fromCharCode(65 + i)}` },
+]));
+
+function renderLegendAndWarning() {
+  els.legend.innerHTML = GATE_SEQUENCE
+    .map((g, i) => `<span class="${GATE_DISPLAY[g].cssClass}">${GATE_DISPLAY[g].label} = ${g[0].toUpperCase()}${g.slice(1)}</span>`)
+    .join(" &nbsp;\u00b7&nbsp; ");
+
+  if (GATE_SEQUENCE.length < 3) {
+    const missing = ["left", "straight", "right"].filter((g) => !GATE_SEQUENCE.includes(g));
+    els.partialWarning.textContent =
+      `This calibration only covers ${GATE_SEQUENCE.length} gate${GATE_SEQUENCE.length > 1 ? "s" : ""} ` +
+      `(not ${missing.join(" or ")}). A mob using different gates will need its own calibration.`;
+    els.partialWarning.style.display = "";
+  } else {
+    els.partialWarning.style.display = "none";
+  }
+}
+
+let gatePoints = Object.fromEntries(GATE_SEQUENCE.map((g) => [g, []])); // each up to 2 [x,y] pairs, image-pixel space
+let confirmedGateCount = 0; // 0..GATE_SEQUENCE.length — only advances when "Next gate" is explicitly pressed
 let imageBox = null; // {offsetX, offsetY, renderedW, renderedH, naturalW, naturalH}
 let gateColor = {};
 
@@ -83,10 +112,11 @@ function totalPointsTapped() {
 }
 
 function updateUI() {
-  els.progress.textContent = isAllConfirmed() ? "Review" : `${totalPointsTapped()} / 6`;
+  els.progress.textContent = isAllConfirmed() ? "Review" : `${totalPointsTapped()} / ${GATE_SEQUENCE.length * 2}`;
 
   if (isAllConfirmed()) {
-    els.prompt.textContent = "All 3 gates marked — check they look right below, then save";
+    const n = GATE_SEQUENCE.length;
+    els.prompt.textContent = `All ${n} gate${n > 1 ? "s" : ""} marked — check they look right below, then save`;
     els.nextBtn.style.display = "none";
     els.saveBtn.style.display = "";
   } else {
@@ -240,7 +270,7 @@ function undoLastPoint() {
 }
 
 function restartAll() {
-  gatePoints = { left: [], straight: [], right: [] };
+  gatePoints = Object.fromEntries(GATE_SEQUENCE.map((g) => [g, []]));
   confirmedGateCount = 0;
   redraw();
   updateUI();
@@ -295,16 +325,17 @@ async function loadExisting() {
     const res = await fetch("/api/calibrate/existing");
     if (!res.ok) return;
     const data = await res.json();
-    if (data.gate_points && GATE_SEQUENCE.every((g) => (data.gate_points[g] || []).length === 2)) {
-      gatePoints = {
-        left: data.gate_points.left.map((p) => [...p]),
-        straight: data.gate_points.straight.map((p) => [...p]),
-        right: data.gate_points.right.map((p) => [...p]),
-      };
+    const savedGates = data.gate_points ? Object.keys(data.gate_points).sort() : [];
+    const wantedGates = [...GATE_SEQUENCE].sort();
+    const exactMatch = savedGates.length === wantedGates.length && savedGates.every((g, i) => g === wantedGates[i]);
+    const eachHasTwoPoints = exactMatch && GATE_SEQUENCE.every((g) => (data.gate_points[g] || []).length === 2);
+
+    if (eachHasTwoPoints) {
+      gatePoints = Object.fromEntries(GATE_SEQUENCE.map((g) => [g, data.gate_points[g].map((p) => [...p])]));
       confirmedGateCount = GATE_SEQUENCE.length;
-      showToast("Loaded your last calibration — Save to keep it, or Start over to redo it.", "success");
+      showToast("Loaded your last calibration for this exact gate set — Save to keep it, or Start over to redo it.", "success");
     } else {
-      showToast("Tap Point A then Point B for each gate. Gate A = Left · Gate B = Straight · Gate C = Right.", "success");
+      showToast(`Tap Point A then Point B for each gate. ${GATE_SEQUENCE.map((g, i) => `Gate ${String.fromCharCode(65 + i)} = ${g[0].toUpperCase()}${g.slice(1)}`).join(" \u00b7 ")}.`, "success");
     }
   } catch (err) {
     console.debug("no existing calibration to load", err);
@@ -358,5 +389,6 @@ els.saveBtn.addEventListener("click", saveZones);
 window.addEventListener("resize", layoutOverlay);
 
 readGateColors();
+renderLegendAndWarning();
 updateUI();
 loadSnapshot().then(loadExisting);

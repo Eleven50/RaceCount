@@ -29,19 +29,13 @@
       <a href="/start" class="active-mob-banner-link">Go to Start &rarr;</a>
     </div>
 
-    <div class="active-counts">
-      <div class="active-count-row" data-dir="left">
-        <div class="active-count-circle" id="countLeft">0</div>
-        <div class="active-count-label" id="labelLeft">Left</div>
+    <div class="active-counts" id="activeCounts" data-active-gates="{{ active_gates|tojson|forceescape }}">
+      {% for gate in active_gates %}
+      <div class="active-count-row" data-dir="{{ gate }}">
+        <div class="active-count-circle" id="count{{ gate|capitalize }}">0</div>
+        <div class="active-count-label" id="label{{ gate|capitalize }}">{{ gate|capitalize }}</div>
       </div>
-      <div class="active-count-row" data-dir="straight">
-        <div class="active-count-circle" id="countStraight">0</div>
-        <div class="active-count-label" id="labelStraight">Straight</div>
-      </div>
-      <div class="active-count-row" data-dir="right">
-        <div class="active-count-circle" id="countRight">0</div>
-        <div class="active-count-label" id="labelRight">Right</div>
-      </div>
+      {% endfor %}
     </div>
 
     <div class="active-rate" id="activeRate" style="display:none">
@@ -56,6 +50,15 @@
     </div>
 
     <div class="active-blocked-reason" id="blockedReason"></div>
+  </div>
+
+  <div class="active-mismatch-overlay" id="mismatchOverlay" style="display:none">
+    <div class="active-mismatch-box">
+      <div class="active-mismatch-title">Recalibration needed</div>
+      <div class="active-mismatch-sub" id="mismatchDetail"></div>
+      <button type="button" class="ml-btn ml-btn-primary" id="mismatchRecalBtn">Recalibrate now</button>
+      <button type="button" class="ml-btn" id="mismatchDismissBtn">Not now</button>
+    </div>
   </div>
 
   <div class="active-toast" id="activeToast" style="display:none"></div>

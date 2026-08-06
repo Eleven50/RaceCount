@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='calibrate.css') }}" />
 </head>
 <body class="calibrate-body">
-  <div class="cal-screen" id="calImageWrap">
+  <div class="cal-screen" id="calImageWrap" data-active-gates="{{ active_gates|tojson|forceescape }}">
 
     <img id="calImage" class="cal-image" alt="Camera view for calibration" style="display:none" />
     <svg id="calOverlay" class="cal-overlay"></svg>
@@ -29,7 +29,8 @@
       <a href="/" class="cal-back" aria-label="Back to dashboard">&larr;</a>
       <div class="cal-prompt-block">
         <div class="cal-prompt" id="calPrompt">Loading camera frame…</div>
-        <div class="cal-legend">Gate A = Left &nbsp;·&nbsp; Gate B = Straight &nbsp;·&nbsp; Gate C = Right</div>
+        <div class="cal-legend" id="calLegend"></div>
+        <div class="cal-partial-warning" id="calPartialWarning" style="display:none"></div>
       </div>
       <div class="cal-progress" id="calProgress"></div>
     </div>

@@ -2,12 +2,12 @@
 Persistent mob storage.
 
 A "mob" is a named batch of livestock being drafted, with custom labels
-for what each of the 3 physical gates means for this particular mob
-(e.g. "Pokers" / "Works" / "Selling" rather than generic Left/Straight/
-Right), and a running count per direction that accumulates across
-however many separate sessions it takes to get through the whole mob —
-you might draft half of it today and come back next week for the rest,
-and the total needs to still be there.
+for whichever of the 3 physical gates this particular mob actually uses
+— 1, 2, or 3 of them (e.g. "Pokers" / "Works" / "Selling" rather than
+generic Left/Straight/Right), and a running count per active gate that
+accumulates across however many separate sessions it takes to get
+through the whole mob — you might draft half of it today and come back
+next week for the rest, and the total needs to still be there.
 
 This is a meaningfully different durability requirement than
 counting/counter.py's in-memory DirectionCounter, which is still exactly
@@ -71,9 +71,14 @@ class Mob:
 
 
 def _validate_gate_labels(gate_labels: dict):
-    missing = [d for d in DIRECTIONS if not str(gate_labels.get(d, "")).strip()]
-    if missing:
-        raise ValueError(f"Missing gate label(s) for: {missing}")
+    if not gate_labels:
+        raise ValueError("At least one gate is required")
+    unknown = [d for d in gate_labels if d not in DIRECTIONS]
+    if unknown:
+        raise ValueError(f"Unknown gate(s): {unknown}")
+    empty = [d for d, label in gate_labels.items() if not str(label).strip()]
+    if empty:
+        raise ValueError(f"Missing gate label(s) for: {empty}")
 
 
 class MobStore:
@@ -104,14 +109,14 @@ class MobStore:
         mob = Mob(
             id=mob_id,
             name=name,
-            gate_labels={d: str(gate_labels[d]).strip() for d in DIRECTIONS},
-            counts={d: 0 for d in DIRECTIONS},
+            gate_labels={d: str(v).strip() for d, v in gate_labels.items()},
+            counts={d: 0 for d in gate_labels},
             created_at=now,
             updated_at=now,
         )
         with self._lock:
             self._atomic_write(self._path_for(mob_id), mob.to_dict())
-        logger.info("Created mob '%s' (%s)", name, mob_id)
+        logger.info("Created mob '%s' (%s) with gates: %s", name, mob_id, list(gate_labels.keys()))
         return mob
 
     def get_mob(self, mob_id: str) -> Optional[Mob]:
@@ -148,6 +153,18 @@ class MobStore:
             if mob is None:
                 logger.warning("increment() called for unknown mob %s", mob_id)
                 return None
+            if direction not in mob.counts:
+                # A calibrated gate that isn't one of THIS mob's active
+                # gates -- a real mismatch between calibration and mob
+                # config, not something that should ever crash the
+                # pipeline over. Logged, not counted; the recalibration
+                # prompt in the UI is the actual fix for this, not a
+                # silent partial-increment here.
+                logger.warning(
+                    "Track passed gate '%s' but mob '%s' doesn't use that gate (active: %s) — not counted",
+                    direction, mob_id, list(mob.counts.keys()),
+                )
+                return mob
             mob.counts[direction] += amount
             mob.updated_at = time.time()
             self._atomic_write(self._path_for(mob_id), mob.to_dict())

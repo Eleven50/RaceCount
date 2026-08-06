@@ -19,12 +19,7 @@ const els = {
   statusDot: document.getElementById("statusDot"),
   statusText: document.getElementById("statusText"),
   mobBanner: document.getElementById("mobBanner"),
-  countLeft: document.getElementById("countLeft"),
-  countStraight: document.getElementById("countStraight"),
-  countRight: document.getElementById("countRight"),
-  labelLeft: document.getElementById("labelLeft"),
-  labelStraight: document.getElementById("labelStraight"),
-  labelRight: document.getElementById("labelRight"),
+  activeCounts: document.getElementById("activeCounts"),
   rate: document.getElementById("activeRate"),
   rateValue: document.getElementById("activeRateValue"),
   startBtn: document.getElementById("startSessionBtn"),
@@ -32,9 +27,26 @@ const els = {
   blockedReason: document.getElementById("blockedReason"),
   toast: document.getElementById("activeToast"),
   headerBackLink: document.getElementById("headerBackLink"),
+  mismatchOverlay: document.getElementById("mismatchOverlay"),
+  mismatchDetail: document.getElementById("mismatchDetail"),
+  mismatchRecalBtn: document.getElementById("mismatchRecalBtn"),
+  mismatchDismissBtn: document.getElementById("mismatchDismissBtn"),
 };
 
-let lastCounts = { left: 0, straight: 0, right: 0 };
+// Whichever gates the server actually rendered for this page load (the
+// active mob's own gates, or all 3 as a placeholder before any mob is
+// selected -- see server.py's /active route). The DOM only contains
+// rows for these gates now, not always all 3 with some hidden, so
+// every lookup below is built from this rather than hardcoding
+// left/straight/right and assuming all three exist.
+const ACTIVE_GATES = JSON.parse(els.activeCounts.dataset.activeGates || '["left","straight","right"]');
+const GATE_ROW_ELS = Object.fromEntries(ACTIVE_GATES.map((gate) => [gate, {
+  row: document.querySelector(`.active-count-row[data-dir="${gate}"]`),
+  circle: document.getElementById(`count${gate.charAt(0).toUpperCase()}${gate.slice(1)}`),
+  label: document.getElementById(`label${gate.charAt(0).toUpperCase()}${gate.slice(1)}`),
+}]));
+
+let lastCounts = Object.fromEntries(ACTIVE_GATES.map((g) => [g, 0]));
 let currentMob = null;
 let sessionActive = false;
 let sessionStartedAt = null;
@@ -78,14 +90,15 @@ async function pollCounts() {
     const data = await res.json();
     const counts = data.counts || {};
 
-    for (const [dir, el] of [["left", els.countLeft], ["straight", els.countStraight], ["right", els.countRight]]) {
-      const value = counts[dir] ?? 0;
-      if (value !== lastCounts[dir]) flashCircle(el);
-      el.textContent = value;
+    let total = 0;
+    for (const gate of ACTIVE_GATES) {
+      const value = counts[gate] ?? 0;
+      total += value;
+      if (!GATE_ROW_ELS[gate]) continue;
+      if (value !== lastCounts[gate]) flashCircle(GATE_ROW_ELS[gate].circle);
+      GATE_ROW_ELS[gate].circle.textContent = value;
     }
     lastCounts = counts;
-
-    const total = (counts.left ?? 0) + (counts.straight ?? 0) + (counts.right ?? 0);
     updateRateDisplay(total);
   } catch (err) {
     console.error("counts poll failed", err);
@@ -115,16 +128,24 @@ function updateMobBanner() {
     els.mobBanner.classList.add("has-mob");
     els.mobBanner.classList.remove("no-mob");
     els.mobBanner.querySelector(".active-mob-banner-label").textContent = currentMob.name;
-    els.labelLeft.textContent = currentMob.gate_labels.left;
-    els.labelStraight.textContent = currentMob.gate_labels.straight;
-    els.labelRight.textContent = currentMob.gate_labels.right;
+    // Server already rendered exactly this mob's gates as the only
+    // rows present (see server.py's /active route) -- just fill in
+    // this mob's custom label text (e.g. "Selling" instead of "Left"),
+    // no visibility toggling needed here anymore.
+    for (const gate of ACTIVE_GATES) {
+      if (GATE_ROW_ELS[gate] && gate in currentMob.gate_labels) {
+        GATE_ROW_ELS[gate].label.textContent = currentMob.gate_labels[gate];
+      }
+    }
   } else {
     els.mobBanner.classList.remove("has-mob");
     els.mobBanner.classList.add("no-mob");
     els.mobBanner.querySelector(".active-mob-banner-label").textContent = "No mob selected";
-    els.labelLeft.textContent = "Left";
-    els.labelStraight.textContent = "Straight";
-    els.labelRight.textContent = "Right";
+    for (const gate of ACTIVE_GATES) {
+      if (GATE_ROW_ELS[gate]) {
+        GATE_ROW_ELS[gate].label.textContent = gate.charAt(0).toUpperCase() + gate.slice(1);
+      }
+    }
   }
 }
 
@@ -191,7 +212,13 @@ els.startBtn.addEventListener("click", async () => {
   try {
     const res = await fetch("/api/session/start", { method: "POST" });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    if (!res.ok) {
+      if (data.error_type === "gate_mismatch") {
+        showMismatchPrompt(data);
+        return;
+      }
+      throw new Error(data.error || `HTTP ${res.status}`);
+    }
     sessionActive = true;
     updateButtons(true);
     showToast("Session started.");
@@ -201,6 +228,41 @@ els.startBtn.addEventListener("click", async () => {
     pollSession(); // resync real state/reason from the server
   }
 });
+
+function describeGateList(gates) {
+  return gates.map((g) => g.charAt(0).toUpperCase() + g.slice(1)).join(" + ");
+}
+
+function showMismatchPrompt(data) {
+  els.mismatchDetail.textContent =
+    `This mob uses ${describeGateList(data.mob_gates)}, but the camera's currently calibrated for ` +
+    `${describeGateList(data.calibrated_gates)}. Recalibrate to match this mob before starting.`;
+  els.mismatchOverlay.style.display = "";
+  els.startBtn.disabled = false;
+
+  els.mismatchRecalBtn.onclick = async () => {
+    els.mismatchRecalBtn.disabled = true;
+    try {
+      // Point /calibrate at exactly this mob's gates, not whatever's
+      // currently calibrated (which is precisely the mismatched set) —
+      // reuses the same gate-selection endpoint the Select Gates page
+      // itself posts to, rather than a separate mechanism.
+      await fetch("/api/gate-selection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gates: data.mob_gates }),
+      });
+      window.location.href = "/calibrate";
+    } catch (err) {
+      console.error("failed to set gate selection for recalibration", err);
+      window.location.href = "/calibrate"; // still navigate -- worst case, /calibrate falls back sensibly
+    }
+  };
+
+  els.mismatchDismissBtn.onclick = () => {
+    els.mismatchOverlay.style.display = "none";
+  };
+}
 
 els.endBtn.addEventListener("click", async () => {
   els.endBtn.disabled = true;

@@ -1,14 +1,19 @@
 /*
   Start screen: two modes toggled by the top bar.
-  - "create": type a mob name + 3 gate labels, Confirm creates a brand
-    new mob (counts start at 0) and makes it the active one.
+  - "create": type a mob name + a label for each active gate (1, 2, or 3
+    of them, as picked on the /start/select-gates page before this one
+    was reached), Confirm creates a brand new mob (counts start at 0)
+    and makes it the active one.
   - "previous": pick an existing mob from the list, Confirm makes it the
-    active one without touching its accumulated counts.
+    active one without touching its accumulated counts. A previous
+    mob's own gate_labels already say which gates it uses -- the fresh
+    gate-count pick from the selection page isn't relevant here, only
+    to creating a brand new mob.
 
-  Either way, a successful Confirm hands off to /active — the Active
-  screen doesn't yet consume the selected mob for live counting (that's
-  further pipeline wiring, not a Start-screen concern), but the
-  selection itself is already recorded server-side via /api/mobs/active.
+  Either way, a successful Confirm hands off to /active. A genuine
+  mismatch between the chosen mob's gates and what's currently
+  calibrated is caught server-side at /api/session/start, not here --
+  this screen's job is picking/creating a mob, not calibration.
 */
 
 const els = {
@@ -17,13 +22,17 @@ const els = {
   createPanel: document.getElementById("createPanel"),
   previousPanel: document.getElementById("previousPanel"),
   mobNameInput: document.getElementById("mobNameInput"),
-  leftNameInput: document.getElementById("leftNameInput"),
-  straightNameInput: document.getElementById("straightNameInput"),
-  rightNameInput: document.getElementById("rightNameInput"),
+  gateFieldsRow: document.getElementById("gateFieldsRow"),
   mobList: document.getElementById("mobList"),
   confirmBtn: document.getElementById("confirmBtn"),
   toast: document.getElementById("startToast"),
 };
+
+const ACTIVE_GATES = JSON.parse(els.gateFieldsRow.dataset.activeGates || "[]");
+const gateInputs = {};
+for (const gate of ACTIVE_GATES) {
+  gateInputs[gate] = document.getElementById(`${gate}NameInput`);
+}
 
 let mode = "create"; // "create" | "previous"
 let selectedMobId = null;
@@ -61,12 +70,8 @@ els.modeUsePreviousBtn.addEventListener("click", () => setMode("previous"));
 // ---------- Create mode validation ----------
 
 function createFieldsValid() {
-  return (
-    els.mobNameInput.value.trim().length > 0 &&
-    els.leftNameInput.value.trim().length > 0 &&
-    els.straightNameInput.value.trim().length > 0 &&
-    els.rightNameInput.value.trim().length > 0
-  );
+  if (els.mobNameInput.value.trim().length === 0) return false;
+  return ACTIVE_GATES.every((gate) => gateInputs[gate].value.trim().length > 0);
 }
 
 function updateConfirmState() {
@@ -80,7 +85,7 @@ function updateConfirmState() {
   }
 }
 
-[els.mobNameInput, els.leftNameInput, els.straightNameInput, els.rightNameInput].forEach((input) => {
+[els.mobNameInput, ...ACTIVE_GATES.map((g) => gateInputs[g])].forEach((input) => {
   input.addEventListener("input", updateConfirmState);
 });
 
@@ -109,6 +114,8 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+const GATE_CSS_CLASS = { left: "gl", straight: "gs", right: "gr" };
+
 function renderMobList() {
   if (mobsCache.length === 0) {
     els.mobList.innerHTML = '<div class="start-mob-list-empty">No previous mobs yet — create one first.</div>';
@@ -120,14 +127,16 @@ function renderMobList() {
     const row = document.createElement("div");
     row.className = "start-mob-row" + (mob.id === selectedMobId ? " selected" : "");
     row.dataset.mobId = mob.id;
+    // A mob's own gate_labels only has keys for the gates IT uses (1-3
+    // of left/straight/right) -- render whichever are actually there,
+    // not a hardcoded all-3 assumption.
+    const labelSpans = Object.keys(mob.gate_labels)
+      .map((gate) => `<span class="${GATE_CSS_CLASS[gate] || ""}">${escapeHtml(mob.gate_labels[gate])}</span>`)
+      .join(" · ");
     row.innerHTML = `
       <div class="start-mob-row-main">
         <div class="start-mob-row-name">${escapeHtml(mob.name)}</div>
-        <div class="start-mob-row-labels">
-          <span class="gl">${escapeHtml(mob.gate_labels.left)}</span> ·
-          <span class="gs">${escapeHtml(mob.gate_labels.straight)}</span> ·
-          <span class="gr">${escapeHtml(mob.gate_labels.right)}</span>
-        </div>
+        <div class="start-mob-row-labels">${labelSpans}</div>
       </div>
       <div class="start-mob-row-meta">
         <div class="start-mob-row-total">${mob.total}</div>
@@ -150,14 +159,11 @@ els.confirmBtn.addEventListener("click", async () => {
 
   try {
     if (mode === "create") {
-      const payload = {
-        name: els.mobNameInput.value.trim(),
-        gate_labels: {
-          left: els.leftNameInput.value.trim(),
-          straight: els.straightNameInput.value.trim(),
-          right: els.rightNameInput.value.trim(),
-        },
-      };
+      const gate_labels = {};
+      for (const gate of ACTIVE_GATES) {
+        gate_labels[gate] = gateInputs[gate].value.trim();
+      }
+      const payload = { name: els.mobNameInput.value.trim(), gate_labels };
       const res = await fetch("/api/mobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

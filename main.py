@@ -46,7 +46,7 @@ from counting.counter import DirectionCounter
 from mobs.mob_store import MobStore
 from mobs.session_record import SessionRecordStore
 from settings.settings_store import SettingsStore
-from ui.server import ActiveMobState, DashboardState, SessionState, run_dashboard
+from ui.server import ActiveMobState, DashboardState, GateSelectionState, SessionState, run_dashboard
 
 LOG_DIR = Path(__file__).resolve().parent / "logs"
 LOG_DIR.mkdir(exist_ok=True)
@@ -233,10 +233,11 @@ def main():
     settings_store = SettingsStore(data_dir=str(Path(__file__).resolve().parent / "data"))
     active_mob_state = ActiveMobState()
     session_state = SessionState()
+    gate_selection_state = GateSelectionState()
 
     dashboard_thread = threading.Thread(
         target=run_dashboard,
-        args=(dashboard_state, counter, zone_manager, mob_store, session_record_store, active_mob_state, session_state, settings_store),
+        args=(dashboard_state, counter, zone_manager, mob_store, session_record_store, active_mob_state, session_state, settings_store, gate_selection_state),
         daemon=True,
         name="dashboard",
     )

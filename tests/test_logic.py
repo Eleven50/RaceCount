@@ -155,10 +155,38 @@ class TestGateCalibration:
                 "right": [[660, 0], [720, 200]],
             })
 
-    def test_rejects_missing_gate(self, tmp_path):
+    def test_accepts_partial_gate_set(self, tmp_path):
+        """1 or 2 gates is now valid, not an error -- this is the whole
+        point of supporting variable gate counts."""
+        zm = ZoneManager(config_path=str(tmp_path / "zones.json"))
+        zm.update_from_gate_points({"left": [[80, 0], [140, 200]]})
+        assert zm.calibrated is True
+        assert list(zm.zones.keys()) == ["left"]
+        assert zm.contains("left", (110, 100)) is True
+
+    def test_calibrating_fewer_gates_replaces_the_full_set(self, tmp_path):
+        """Calibrating just 'left' after previously having all 3
+        replaces the calibrated set entirely -- it doesn't merge with
+        what was there before."""
+        zm = ZoneManager(config_path=str(tmp_path / "zones.json"))
+        zm.update_from_gate_points({
+            "left": [[80, 0], [140, 200]],
+            "straight": [[300, 60], [500, 140]],
+            "right": [[660, 0], [720, 200]],
+        })
+        assert len(zm.zones) == 3
+        zm.update_from_gate_points({"left": [[80, 0], [140, 200]]})
+        assert list(zm.zones.keys()) == ["left"]
+
+    def test_rejects_empty_gate_set(self, tmp_path):
         zm = ZoneManager(config_path=str(tmp_path / "zones.json"))
         with pytest.raises(ValueError):
-            zm.update_from_gate_points({"left": [[1, 1], [50, 50]], "straight": [[1, 1], [50, 50]]})
+            zm.update_from_gate_points({})
+
+    def test_rejects_unknown_gate_name(self, tmp_path):
+        zm = ZoneManager(config_path=str(tmp_path / "zones.json"))
+        with pytest.raises(ValueError):
+            zm.update_from_gate_points({"diagonal": [[1, 1], [50, 50]]})
 
     def test_rejects_wrong_point_count(self, tmp_path):
         zm = ZoneManager(config_path=str(tmp_path / "zones.json"))

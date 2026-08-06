@@ -18,12 +18,7 @@ const els = {
   mobNameInline: document.getElementById("statsMobNameInline"),
   date: document.getElementById("statsDate"),
   duration: document.getElementById("statsDuration"),
-  labelLeft: document.getElementById("statsLabelLeft"),
-  labelStraight: document.getElementById("statsLabelStraight"),
-  labelRight: document.getElementById("statsLabelRight"),
-  countLeft: document.getElementById("statsCountLeft"),
-  countStraight: document.getElementById("statsCountStraight"),
-  countRight: document.getElementById("statsCountRight"),
+  breakdown: document.getElementById("statsBreakdown"),
   sessionTotal: document.getElementById("statsSessionTotal"),
   rate: document.getElementById("statsRate"),
   mobTotal: document.getElementById("statsMobTotal"),
@@ -34,6 +29,22 @@ function showError(message) {
   els.body.style.display = "none";
   els.errorDetail.textContent = message;
   els.error.style.display = "";
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function renderBreakdown(session) {
+  const gates = Object.keys(session.gate_labels);
+  els.breakdown.innerHTML = gates.map((gate) => `
+    <div class="stats-breakdown-row" data-dir="${gate}">
+      <span class="stats-breakdown-label">${escapeHtml(session.gate_labels[gate])}</span>
+      <span class="stats-breakdown-count">${session.counts[gate] ?? 0}</span>
+    </div>
+  `).join("");
 }
 
 async function load() {
@@ -59,13 +70,7 @@ async function load() {
   els.date.textContent = formatShortDate(session.ended_at);
   els.duration.textContent = formatDuration(session.duration_seconds);
 
-  els.labelLeft.textContent = session.gate_labels.left;
-  els.labelStraight.textContent = session.gate_labels.straight;
-  els.labelRight.textContent = session.gate_labels.right;
-
-  els.countLeft.textContent = session.counts.left;
-  els.countStraight.textContent = session.counts.straight;
-  els.countRight.textContent = session.counts.right;
+  renderBreakdown(session);
   els.sessionTotal.textContent = session.total;
 
   // Same 30s floor as the Active screen's live rate -- a session that

@@ -136,9 +136,6 @@ class ZoneManager:
             for name, points in raw.items()
             if name in ZONE_NAMES
         }
-        missing = [n for n in ZONE_NAMES if n not in zones]
-        if missing:
-            logger.warning("Zone config is missing zones: %s", missing)
         with self._lock:
             self.zones = zones
             self.calibrated = True
@@ -157,20 +154,25 @@ class ZoneManager:
 
     def update_from_gate_points(self, gate_points: dict):
         """
-        gate_points: {"left": [[x1,y1],[x2,y2]], "straight": [...], "right": [...]}
-        Each value is exactly 2 points — opposite corners of the gate's
-        rectangle, calibrated with real gap from the physical gate
-        structure rather than flush against it. Applied immediately (so
-        the running pipeline picks it up on the very next frame — no
-        restart needed) and persisted to disk.
+        gate_points: {"left": [[x1,y1],[x2,y2]], ...} — 1, 2, or 3 of
+        the 3 possible gates, whichever are actually in use for this
+        setup. Each value is exactly 2 points — opposite corners of the
+        gate's rectangle, calibrated with real gap from the physical
+        gate structure rather than flush against it. Applied immediately
+        (so the running pipeline picks it up on the very next frame —
+        no restart needed) and persisted to disk. Replaces the full
+        calibrated set — calling this with just {"left": ...} after
+        previously calibrating all 3 means only "left" is calibrated
+        afterwards, not "left plus whatever was there before".
         """
-        missing = [n for n in ZONE_NAMES if n not in gate_points]
-        if missing:
-            raise ValueError(f"Missing gate(s): {missing}")
+        if not gate_points:
+            raise ValueError("At least one gate is required")
+        unknown = [n for n in gate_points if n not in ZONE_NAMES]
+        if unknown:
+            raise ValueError(f"Unknown gate(s): {unknown}")
 
         new_zones = {}
-        for name in ZONE_NAMES:
-            points = gate_points[name]
+        for name, points in gate_points.items():
             if len(points) != 2:
                 raise ValueError(f"Gate '{name}' needs exactly 2 points, got {len(points)}")
             a, b = tuple(points[0]), tuple(points[1])
@@ -189,7 +191,7 @@ class ZoneManager:
         path = Path(self.config_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         with self._lock:
-            payload = {name: [list(self.zones[name][0]), list(self.zones[name][1])] for name in ZONE_NAMES}
+            payload = {name: [list(a), list(b)] for name, (a, b) in self.zones.items()}
         with open(path, "w") as f:
             json.dump(payload, f, indent=2)
         logger.info("Saved zones to %s", self.config_path)

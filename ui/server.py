@@ -20,7 +20,9 @@ from pathlib import Path
 from typing import Optional
 
 import cv2
-from flask import Flask, Response, jsonify, render_template, request
+from flask import Flask, Response, jsonify, redirect, render_template, request
+
+from logic.zones import ZONE_NAMES
 
 logger = logging.getLogger("racecount.ui")
 
@@ -135,6 +137,29 @@ class ActiveMobState:
             return self._mob_id
 
 
+class GateSelectionState:
+    """
+    Which gates (1, 2, or 3 of left/straight/right) the user picked on
+    the "how many gates" page, on the way to naming a new mob. Same
+    in-memory-only, per-flow lifetime as ActiveMobState above — this is
+    "what the user is in the middle of setting up right now", not
+    durable data, and going back through the selection page again on a
+    restart is the correct recovery, not silently resuming a stale pick.
+    """
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._gates: Optional[list] = None
+
+    def set(self, gates: Optional[list]):
+        with self._lock:
+            self._gates = list(gates) if gates else None
+
+    def get(self) -> Optional[list]:
+        with self._lock:
+            return list(self._gates) if self._gates else None
+
+
 class SessionState:
     """
     Whether the pipeline should currently be doing the expensive part —
@@ -172,7 +197,7 @@ class SessionState:
             return self._started_at
 
 
-def create_app(dashboard_state: DashboardState, counter, zone_manager, mob_store, session_record_store, active_mob_state: ActiveMobState, session_state: SessionState, settings_store) -> Flask:
+def create_app(dashboard_state: DashboardState, counter, zone_manager, mob_store, session_record_store, active_mob_state: ActiveMobState, session_state: SessionState, settings_store, gate_selection_state: GateSelectionState) -> Flask:
     app = Flask(__name__)
     app.logger.setLevel(logging.WARNING)
     # werkzeug logs one line per HTTP request by default, including every
@@ -215,11 +240,42 @@ def create_app(dashboard_state: DashboardState, counter, zone_manager, mob_store
 
     @app.route("/active")
     def active():
-        return render_template("active.html", app_version=APP_VERSION, theme=settings_store.get_theme())
+        mob_id = active_mob_state.get()
+        mob = mob_store.get_mob(mob_id) if mob_id else None
+        # Falls back to all 3 as a reasonable placeholder before any mob
+        # is selected yet -- once one is, this route is reached via a
+        # fresh page load (see start.js's window.location.href after
+        # creating/selecting a mob), so the real gate set is always
+        # server-rendered correctly by the time it matters.
+        gates = sorted(mob.gate_labels.keys()) if mob else list(ZONE_NAMES)
+        return render_template("active.html", app_version=APP_VERSION, theme=settings_store.get_theme(), active_gates=gates)
+
+    @app.route("/start/select-gates")
+    def select_gates():
+        return render_template("select_gates.html", app_version=APP_VERSION, theme=settings_store.get_theme())
+
+    @app.route("/api/gate-selection", methods=["POST"])
+    def api_gate_selection_set():
+        data = request.get_json(silent=True) or {}
+        gates = data.get("gates")
+        if not gates or not isinstance(gates, list) or not (1 <= len(gates) <= 3):
+            return jsonify({"error": "Pick 1 to 3 gates"}), 400
+        unknown = [g for g in gates if g not in ("left", "straight", "right")]
+        if unknown:
+            return jsonify({"error": f"Unknown gate(s): {unknown}"}), 400
+        gate_selection_state.set(gates)
+        return jsonify({"ok": True, "gates": gate_selection_state.get()})
 
     @app.route("/start")
     def start():
-        return render_template("start.html", app_version=APP_VERSION, theme=settings_store.get_theme())
+        gates = gate_selection_state.get()
+        if gates is None:
+            # Reaching /start directly (stale bookmark, browser back
+            # button) without having gone through the selection page
+            # first -- send them there rather than render a page with
+            # no idea which gates it's naming fields for.
+            return redirect("/start/select-gates")
+        return render_template("start.html", app_version=APP_VERSION, theme=settings_store.get_theme(), active_gates=gates)
 
     @app.route("/history")
     def history():
@@ -485,15 +541,30 @@ def create_app(dashboard_state: DashboardState, counter, zone_manager, mob_store
     def api_session_start():
         """
         Server-side gate, not just a client-side disabled button — the
-        client already greys out Start Session under the same two
+        client already greys out Start Session under the same
         conditions, but that's a UX nicety, not something to trust as
-        the actual enforcement. Both conditions get checked again here
+        the actual enforcement. All conditions get checked again here
         regardless of what the button looked like when it was tapped.
         """
         if not zone_manager.calibrated:
-            return jsonify({"error": "Gates aren't calibrated yet — calibrate before starting a session."}), 400
-        if active_mob_state.get() is None:
-            return jsonify({"error": "No mob selected — go to Start and create or pick one first."}), 400
+            return jsonify({"error": "Gates aren't calibrated yet — calibrate before starting a session.", "error_type": "not_calibrated"}), 400
+        mob_id = active_mob_state.get()
+        if mob_id is None:
+            return jsonify({"error": "No mob selected — go to Start and create or pick one first.", "error_type": "no_mob"}), 400
+        mob = mob_store.get_mob(mob_id)
+        if mob is not None and set(mob.gate_labels.keys()) != set(zone_manager.zones.keys()):
+            # This mob expects a different set of gates than what's
+            # currently calibrated -- e.g. it was created for 3 gates
+            # but the camera's now only calibrated for 2, or vice versa.
+            # A real, distinct error rather than "not calibrated" so the
+            # UI can prompt for recalibration specifically, not just
+            # repeat the generic calibrate-first message.
+            return jsonify({
+                "error": "This mob's gates don't match what's currently calibrated — recalibrate before starting.",
+                "error_type": "gate_mismatch",
+                "mob_gates": sorted(mob.gate_labels.keys()),
+                "calibrated_gates": sorted(zone_manager.zones.keys()),
+            }), 400
         session_state.set_active(True)
         logger.info("Session started")
         return jsonify({"ok": True})
@@ -567,7 +638,18 @@ def create_app(dashboard_state: DashboardState, counter, zone_manager, mob_store
 
     @app.route("/calibrate")
     def calibrate_page():
-        return render_template("calibrate.html", app_version=APP_VERSION)
+        # Mid-setup (reached via a "recalibrate before starting" prompt,
+        # with a gate selection already pending) calibrates exactly that
+        # selection. Direct entry (the Home tile, no selection in
+        # progress) recalibrates whatever's currently calibrated, or
+        # defaults to all 3 if nothing's ever been calibrated yet --
+        # "recalibrate my existing setup" is the natural read for
+        # reaching this screen directly, not "start a new one from
+        # scratch."
+        gates = gate_selection_state.get()
+        if gates is None:
+            gates = sorted(zone_manager.zones.keys()) if zone_manager.calibrated else list(ZONE_NAMES)
+        return render_template("calibrate.html", app_version=APP_VERSION, active_gates=gates)
 
     @app.route("/api/calibrate/snapshot")
     def calibrate_snapshot():
@@ -608,7 +690,7 @@ def create_app(dashboard_state: DashboardState, counter, zone_manager, mob_store
     return app
 
 
-def run_dashboard(dashboard_state: DashboardState, counter, zone_manager, mob_store, session_record_store, active_mob_state: ActiveMobState, session_state: SessionState, settings_store, host: str = "0.0.0.0", port: int = 8080):
+def run_dashboard(dashboard_state: DashboardState, counter, zone_manager, mob_store, session_record_store, active_mob_state: ActiveMobState, session_state: SessionState, settings_store, gate_selection_state: GateSelectionState, host: str = "0.0.0.0", port: int = 8080):
     """
     Binds to 0.0.0.0 so the dashboard is also reachable from other devices
     on the same LAN (e.g. checking counts from a phone in the yard) — this
@@ -619,5 +701,5 @@ def run_dashboard(dashboard_state: DashboardState, counter, zone_manager, mob_st
     short API polls be served concurrently. use_reloader must stay False
     since this runs from a thread-owning process, not the Flask CLI.
     """
-    app = create_app(dashboard_state, counter, zone_manager, mob_store, session_record_store, active_mob_state, session_state, settings_store)
+    app = create_app(dashboard_state, counter, zone_manager, mob_store, session_record_store, active_mob_state, session_state, settings_store, gate_selection_state)
     app.run(host=host, port=port, threaded=True, use_reloader=False)

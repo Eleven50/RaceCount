@@ -160,7 +160,7 @@ function render() {
 
     const breakdown = document.createElement("div");
     breakdown.className = "history-card-breakdown";
-    breakdown.innerHTML = ["left", "straight", "right"].map((dir) => `
+    breakdown.innerHTML = Object.keys(mob.gate_labels).map((dir) => `
       <div class="history-breakdown-row" data-dir="${dir}">
         <span class="history-breakdown-label">${escapeHtml(mob.gate_labels[dir])}</span>
         <span class="history-breakdown-count">${mob.counts[dir]}</span>

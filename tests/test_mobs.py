@@ -45,10 +45,30 @@ class TestMobCreation:
         with pytest.raises(ValueError):
             store.create_mob("   ", GATE_LABELS)
 
-    def test_missing_gate_label_rejected(self, tmp_path):
+    def test_partial_gate_set_accepted(self, tmp_path):
+        """1 or 2 gates is now valid, not an error -- supporting a mob
+        that only uses some of the 3 possible gates is the whole point."""
+        store = MobStore(data_dir=str(tmp_path))
+        mob = store.create_mob("Test", {"left": "a", "straight": "b"})
+        assert mob.gate_labels == {"left": "a", "straight": "b"}
+        assert mob.counts == {"left": 0, "straight": 0}
+        assert "right" not in mob.counts
+
+    def test_single_gate_mob(self, tmp_path):
+        store = MobStore(data_dir=str(tmp_path))
+        mob = store.create_mob("Test", {"straight": "Through"})
+        assert mob.gate_labels == {"straight": "Through"}
+        assert mob.total == 0
+
+    def test_empty_gate_dict_rejected(self, tmp_path):
         store = MobStore(data_dir=str(tmp_path))
         with pytest.raises(ValueError):
-            store.create_mob("Test", {"left": "a", "straight": "b"})  # missing "right"
+            store.create_mob("Test", {})
+
+    def test_unknown_gate_name_rejected(self, tmp_path):
+        store = MobStore(data_dir=str(tmp_path))
+        with pytest.raises(ValueError):
+            store.create_mob("Test", {"diagonal": "a"})
 
     def test_empty_gate_label_rejected(self, tmp_path):
         store = MobStore(data_dir=str(tmp_path))
@@ -110,6 +130,18 @@ class TestIncrement:
         mob = store.create_mob("Test", GATE_LABELS)
         with pytest.raises(ValueError):
             store.increment(mob.id, "diagonal")
+
+    def test_increment_for_gate_not_in_this_mobs_active_set_does_not_crash(self, tmp_path):
+        """A globally-valid direction ('right' is a real gate) that
+        isn't one of THIS mob's active gates -- a genuine calibration/
+        mob mismatch, not something that should ever crash the
+        pipeline. Should be a graceful no-op, not an exception."""
+        store = MobStore(data_dir=str(tmp_path))
+        mob = store.create_mob("Test", {"left": "a", "straight": "b"})  # no "right"
+        result = store.increment(mob.id, "right")
+        assert result is not None  # doesn't return None like "mob not found" would
+        assert "right" not in result.counts  # genuinely not counted
+        assert result.total == 0
 
     def test_increment_unknown_mob_returns_none_not_exception(self, tmp_path):
         store = MobStore(data_dir=str(tmp_path))

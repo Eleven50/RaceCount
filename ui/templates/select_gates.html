@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}RaceCount — Select Gates{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='select_gates.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="sg-screen">
+
+  <div class="sg-step" id="stepCount">
+    <h1 class="sg-title">How many gates?</h1>
+    <p class="sg-sub">Pick how many of the 3 gates you're using for this mob.</p>
+    <div class="sg-choices">
+      <button type="button" class="sg-choice-btn" data-count="1">
+        <span class="sg-choice-num">1</span>
+        <span class="sg-choice-label">Gate</span>
+      </button>
+      <button type="button" class="sg-choice-btn" data-count="2">
+        <span class="sg-choice-num">2</span>
+        <span class="sg-choice-label">Gates</span>
+      </button>
+      <button type="button" class="sg-choice-btn" data-count="3">
+        <span class="sg-choice-num">3</span>
+        <span class="sg-choice-label">Gates</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="sg-step" id="stepWhich" style="display:none">
+    <h1 class="sg-title" id="whichTitle">Which gate?</h1>
+    <p class="sg-sub">Pick which of the 3 physical gates this mob uses.</p>
+    <div class="sg-choices sg-choices-vertical" id="whichChoices"></div>
+    <button type="button" class="sg-back-btn" id="whichBackBtn">&larr; Back</button>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='select_gates.js') }}"></script>
+{% endblock %}

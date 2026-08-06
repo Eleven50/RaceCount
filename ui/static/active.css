@@ -240,6 +240,46 @@
   color: var(--brand-text-muted);
 }
 
+/* ---------- Gate mismatch overlay ---------- */
+
+.active-mismatch-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 700;
+  background: rgba(22, 30, 38, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.active-mismatch-box {
+  max-width: 420px;
+  background: var(--brand-navy-surface);
+  border: 1px solid var(--brand-navy-border);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+.active-mismatch-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--brand-text);
+}
+
+.active-mismatch-sub {
+  font-size: 14px;
+  color: var(--brand-text-muted);
+  line-height: 1.4;
+}
+
+.active-mismatch-box .ml-btn {
+  min-height: 48px;
+}
+
 /* ---------- Buttons ---------- */
 
 .active-buttons {
