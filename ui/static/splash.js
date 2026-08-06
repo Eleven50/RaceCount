@@ -26,7 +26,7 @@ let navigated = false;
 function goHome() {
   if (navigated) return;
   navigated = true;
-  window.location.href = "/";
+  window.rcNavigate("/");
 }
 
 async function pollBackend() {

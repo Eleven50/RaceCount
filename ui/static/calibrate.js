@@ -359,7 +359,7 @@ async function saveZones() {
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     showToast("Zones saved — applied live, no restart needed.", "success");
     setTimeout(() => {
-      window.location.href = "/";
+      window.rcNavigate("/");
     }, 1200);
   } catch (err) {
     console.error("save failed", err);

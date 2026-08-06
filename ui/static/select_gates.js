@@ -37,7 +37,7 @@ async function submitSelection(gates) {
       alert(data.error || "Couldn't save gate selection.");
       return;
     }
-    window.location.href = "/start";
+    window.rcNavigate("/start");
   } catch (err) {
     console.error("failed to submit gate selection", err);
     alert("Couldn't reach RaceCount to save your selection.");

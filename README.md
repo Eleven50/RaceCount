@@ -343,28 +343,60 @@ simulate) bypasses the browser's native enforcement of it entirely.
 
 ## Resilient navigation
 
-Every internal link (the header's Back button, Home's nav tiles, etc.)
-goes through `ui/static/nav-guard.js`, loaded globally via `base.html`,
-rather than navigating directly.
+Every internal navigation — clicking a link (the header's Back button,
+Home's nav tiles), and JS-driven redirects after an action completes
+(creating a mob, ending a session, saving a calibration, picking gates)
+— goes through `ui/static/nav-guard.js`, loaded globally via
+`base.html` and, since v3, on the two standalone pages that don't
+extend it too (`splash.html`, `calibrate.html`).
 
-This went through a real revision worth knowing about. The first version
-checked the backend (`/api/status`) *before every single navigation* —
-on a healthy backend that's a few milliseconds, but it's still a real
-network round-trip added to the critical path of every screen switch,
-and on Pi-class hardware that was enough to make completely normal
-navigation feel sluggish. That was taxing the common case (ordinary
-navigation, which is the overwhelming majority of the time) to guard
-against a rare one (a brief blip during an auto-update restart).
+This went through two real revisions worth knowing about, not just one.
 
-The current version instead runs a lightweight background poller
-(`/api/status` every 2.5s, independent of navigation) that keeps an
-already-known `backendAlive` flag current. Clicking a link checks that
-flag — healthy (the default, and the common case) means instant
-navigation, identical to a plain `<a href>`, zero added latency. The
-"Reconnecting…" overlay only ever appears when the poller has *already*
-detected a real problem, not as a tax on every click waiting to find
-out. Measured with repeated real navigations: ~190ms average, which is
-just natural page-load time, not an artificial delay.
+**v1** checked the backend (`/api/status`) *before every single
+navigation* — on a healthy backend that's a few milliseconds, but it's
+still a real network round-trip added to the critical path of every
+screen switch, and on Pi-class hardware that was enough to make
+completely normal navigation feel sluggish. That was taxing the common
+case (ordinary navigation, the overwhelming majority of the time) to
+guard against a rare one (a brief blip during an auto-update restart).
+
+**v2** fixed that with a lightweight background poller (`/api/status`
+every 2.5s, independent of navigation) keeping an already-known
+`backendAlive` flag current — healthy means instant navigation, zero
+added latency; the "Reconnecting…" overlay only appears when a problem
+is *already* known. Measured with repeated real navigations: ~190ms
+average, just natural page-load time.
+
+**v3** closed a real remaining gap: v2 only intercepted clicks on `<a>`
+tags. Plenty of navigation in this app happens as
+`window.location.href = ...` directly from JS — after creating a mob,
+ending a session, saving a calibration, picking gates — and none of
+that was protected at all. Those are exactly the moments right after
+real backend work, not random idle clicks, so a blip landing there kept
+producing the raw "can't reach this page" error even after v2 shipped.
+`window.rcNavigate(href)` is now the one shared entry point every kind
+of navigation goes through — the click-handler calls it, and every
+other script's redirects call it directly instead of setting
+`window.location.href` themselves.
+
+**v4** fixed a different real gap in the retry logic itself, not
+coverage this time. Once the initial ~2.4s of quiet retrying gave up, it
+showed a "Still trying to reach RaceCount" message with a manual "Try
+again" button — and then genuinely stopped. Nothing kept retrying in
+the background; recovery required a human to click. That's a real
+problem for what's actually the likely cause of a longer outage: a
+`systemctl restart` (the auto-updater deploying a new commit, or the
+watchdog firing) can easily take longer than a few seconds on real Pi
+hardware, especially with the YOLO model needing to load. Now there's a
+second, more patient phase: up to ~2 more minutes of automatic retries
+at a slower 2s cadence, no click required — the button that's shown is
+a "check right now" convenience for someone impatient, not the only way
+to recover. Verified by simulating a 3-second outage and confirming it
+recovers and navigates entirely on its own, no click, in line with the
+expected timing. Only past that ~2-minute mark does it show a more
+final "Couldn't reach RaceCount — check the Pi" message, since silently
+retrying forever at that point would be worse than being honest that
+something beyond a brief restart might be wrong.
 
 This exists at all because a plain `<a href>` hitting the backend during
 a brief restart (the auto-updater applying a new commit, or any other

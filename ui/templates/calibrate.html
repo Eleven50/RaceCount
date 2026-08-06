@@ -6,6 +6,7 @@
   <title>RaceCount — Calibrate Zones</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='brand.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='calibrate.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='nav-guard.css') }}" />
 </head>
 <body class="calibrate-body">
   <div class="cal-screen" id="calImageWrap" data-active-gates="{{ active_gates|tojson|forceescape }}">
@@ -46,6 +47,7 @@
     <div class="cal-toast" id="calToast" style="display:none"></div>
   </div>
 
+  <script src="{{ url_for('static', filename='nav-guard.js') }}"></script>
   <script src="{{ url_for('static', filename='calibrate.js') }}"></script>
 </body>
 </html>

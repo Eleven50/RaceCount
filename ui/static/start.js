@@ -180,7 +180,7 @@ els.confirmBtn.addEventListener("click", async () => {
     }
 
     setTimeout(() => {
-      window.location.href = "/active";
+      window.rcNavigate("/active");
     }, 700);
   } catch (err) {
     console.error("confirm failed", err);

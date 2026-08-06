@@ -6,6 +6,7 @@
   <title>RaceCount</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='brand.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='splash.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='nav-guard.css') }}" />
 </head>
 <body class="splash-body">
   <div class="splash-screen">
@@ -13,6 +14,7 @@
     <div class="splash-caption">Starting up&hellip;</div>
     <div class="splash-spinner"></div>
   </div>
+  <script src="{{ url_for('static', filename='nav-guard.js') }}"></script>
   <script src="{{ url_for('static', filename='splash.js') }}"></script>
 </body>
 </html>

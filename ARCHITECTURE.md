@@ -160,6 +160,13 @@ These are all explained in more depth as comments in the relevant file
   Any new screen CSS should read `var(--brand-*)` rather than hardcode a
   color, or it won't pick up theme changes. Calibrate and Splash are
   deliberately exempt (camera-overlay UI and a fixed branding moment).
+- Never navigate with `window.location.href = ...` directly — use
+  `window.rcNavigate(href)` instead (`nav-guard.js`, loaded globally,
+  including on the two standalone pages). A raw redirect skips the
+  backend-health check entirely, which is exactly the bug that made
+  "this site can't be reached" keep showing up after a mob/session/
+  calibration action even once link clicks were already protected —
+  see the README's "Resilient navigation" section for the full story.
 
 ## What's NOT in the code
 

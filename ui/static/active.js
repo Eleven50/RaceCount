@@ -252,10 +252,10 @@ function showMismatchPrompt(data) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ gates: data.mob_gates }),
       });
-      window.location.href = "/calibrate";
+      window.rcNavigate("/calibrate");
     } catch (err) {
       console.error("failed to set gate selection for recalibration", err);
-      window.location.href = "/calibrate"; // still navigate -- worst case, /calibrate falls back sensibly
+      window.rcNavigate("/calibrate"); // still navigate -- worst case, /calibrate falls back sensibly
     }
   };
 
@@ -273,7 +273,7 @@ els.endBtn.addEventListener("click", async () => {
     showToast("Session ended.");
     const destination = data.session_record_id ? `/session-stats/${data.session_record_id}` : "/";
     setTimeout(() => {
-      window.location.href = destination;
+      window.rcNavigate(destination);
     }, 600);
   } catch (err) {
     console.error("end session failed", err);

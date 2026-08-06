@@ -38,6 +38,14 @@
   animation: rc-nav-spin 0.8s linear infinite;
 }
 
+.rc-nav-sub {
+  margin-top: -6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--brand-text-muted);
+  text-align: center;
+}
+
 @keyframes rc-nav-spin {
   to {
     transform: rotate(360deg);
